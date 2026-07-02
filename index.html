@@ -1063,14 +1063,14 @@
         <!-- SPOTIFY -->
         <div class="section" style="margin-top:8px;">
             <div class="section-header">
-                <span class="section-icon">🎶</span>
+<span class="section-icon">🎶</span>
                 <span class="section-label">Nossas playlists</span>
             </div>
         </div>
         <div class="spotify-card">
             <iframe title="Nossa playlist no Spotify" src="https://open.spotify.com/embed/playlist/7uaHKseMBYjDd2mOl3aSnO?utm_source=generator&si=c3b66a50512a4aeb" width="100%" frameBorder="0" allowfullscreen="" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
         </div>
-        <div class="spotify-card" style="margin-top:8px;">
+<div class="spotify-card" style="margin-top:8px;">
             <iframe title="Nossa playlist no Spotify" src="https://open.spotify.com/embed/playlist/6e38QNjp37czVGs15S0Qyt?utm_source=generator&si=a13e76e691934a4f" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         </div>
 
@@ -1229,7 +1229,7 @@
             return `${d}/${m}/${y}`;
         };
 
-        // ===== STORAGE (sincronizado via Upstash Redis) =====
+// ===== STORAGE (sincronizado via Upstash Redis) =====
         const storageKey = 'letterboxdReviews';
         let reviewsCache = null;
 
@@ -1261,6 +1261,7 @@
                         body: JSON.stringify({ reviews: items })
                     });
                 } catch {}
+            }
             }
         };
 
