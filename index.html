@@ -1071,7 +1071,7 @@
             <iframe title="Nossa playlist no Spotify" src="https://open.spotify.com/embed/playlist/7uaHKseMBYjDd2mOl3aSnO?utm_source=generator&si=c3b66a50512a4aeb" width="100%" frameBorder="0" allowfullscreen="" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
         </div>
 <div class="spotify-card" style="margin-top:8px;">
-            <iframe title="Nossa playlist no Spotify" src="https://open.spotify.com/embed/playlist/6e38QNjp37czVGs15S0Qyt?utm_source=generator&si=a13e76e691934a4f" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <iframe title="Nossa playlist no Spotify" src="https://open.spotify.com/embed/playlist/6e38QNjp37czVGs15S0Qyt?utm_source=generator&si=a13e76e691934a4f" width="100%" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         </div>
 
         <!-- PHOTO CALLOUT -->
@@ -1119,23 +1119,25 @@
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label" for="ratingNico">Nota do Nico</label>
                             <select class="form-input" id="ratingNico" required>
-                                <option value="0" disabled selected>Selecionar</option>
+                                <option value="" disabled selected>Selecionar</option>
                                 <option value="1">⭐ 1</option>
                                 <option value="2">⭐⭐ 2</option>
                                 <option value="3">⭐⭐⭐ 3</option>
                                 <option value="4">⭐⭐⭐⭐ 4</option>
                                 <option value="5">⭐⭐⭐⭐⭐ 5</option>
+                                <option value="0">😴😴😴😴😴 Dormiu</option>
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label" for="ratingNick">Nota da Nick</label>
                             <select class="form-input" id="ratingNick" required>
-                                <option value="0" disabled selected>Selecionar</option>
+                                <option value="" disabled selected>Selecionar</option>
                                 <option value="1">⭐ 1</option>
                                 <option value="2">⭐⭐ 2</option>
                                 <option value="3">⭐⭐⭐ 3</option>
                                 <option value="4">⭐⭐⭐⭐ 4</option>
                                 <option value="5">⭐⭐⭐⭐⭐ 5</option>
+                                <option value="0">😴😴😴😴😴 Dormiu</option>
                             </select>
                         </div>
                     </div>
@@ -1217,7 +1219,7 @@
 
         const ratingStars = (rating) => {
             const n = Number(rating) || 0;
-            if (n === 0) return '—';
+            if (n === 0) return '😴😴😴😴😴';
             const full = Math.floor(n);
             const half = n % 1 >= 0.5 ? '½' : '';
             return '⭐'.repeat(full) + half;
@@ -1262,7 +1264,6 @@
                     });
                 } catch {}
             }
-            }
         };
 
         // ===== STATE =====
@@ -1274,7 +1275,11 @@
                 const isOld = !('ratingNico' in r) && !('ratingNick' in r);
                 const nico = isOld ? Number(r.rating) : Number(r.ratingNico) || 0;
                 const nick = isOld ? Number(r.rating) : Number(r.ratingNick) || 0;
-                const avg = (nico + nick) / 2;
+                let avg;
+                if (nico === 0 && nick === 0) avg = 0;
+                else if (nico === 0) avg = nick;
+                else if (nick === 0) avg = nico;
+                else avg = (nico + nick) / 2;
                 return {
                     movie: (r.movie || '').toString().trim() || `Filme ${i + 1}`,
                     date: r.date || '',
@@ -1448,12 +1453,18 @@
 
         // ===== RATING DISPLAY =====
         const updateRatingDisplay = () => {
-            const n = $('ratingNico').value;
-            const k = $('ratingNick').value;
+            const nEl = $('ratingNico');
+            const kEl = $('ratingNick');
             const display = $('ratingDisplay');
             if (!display) return;
-            if (!n || !k || n === '0' || k === '0') { display.value = ''; return; }
-            const avg = (Number(n) + Number(k)) / 2;
+            const nv = nEl.value, kv = kEl.value;
+            if (!nv || !kv) { display.value = ''; return; }
+            const n = Number(nv), k = Number(kv);
+            let avg;
+            if (n === 0 && k === 0) avg = 0;
+            else if (n === 0) avg = k;
+            else if (k === 0) avg = n;
+            else avg = (n + k) / 2;
             display.value = `${Number.isInteger(avg) ? avg : avg.toFixed(1)}/5`;
         };
 
@@ -1472,17 +1483,22 @@
             const commentNico = $('commentNico').value.trim();
             const commentNick = $('commentNick').value.trim();
 
-            if (!movieName || !movieDate || ratingNico === '0' || ratingNick === '0' || !commentNico || !commentNick) {
+            if (!movieName || !movieDate || !ratingNico || !ratingNick || !commentNico || !commentNick) {
                 alert('Preencha todos os campos antes de adicionar o filme.');
                 return;
             }
 
-            const avg = (Number(ratingNico) + Number(ratingNick)) / 2;
+            const n = Number(ratingNico), k = Number(ratingNick);
+            let avg;
+            if (n === 0 && k === 0) avg = 0;
+            else if (n === 0) avg = k;
+            else if (k === 0) avg = n;
+            else avg = (n + k) / 2;
             const payload = {
                 movie: movieName,
                 date: movieDate,
-                ratingNico: Number(ratingNico),
-                ratingNick: Number(ratingNick),
+                ratingNico: n,
+                ratingNick: k,
                 rating: Number.isInteger(avg) ? avg : +avg.toFixed(1),
                 commentNico,
                 commentNick
@@ -1616,7 +1632,7 @@
 
                 if (d.getMonth() !== month) el.classList.add('other-month');
 
-                const dateStr = d.toISOString().split('T')[0];
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                 const matching = reviews.filter(r => r.date === dateStr);
 
                 if (matching.length) {
