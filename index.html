@@ -207,16 +207,31 @@
             position: relative;
             overflow: hidden;
             cursor: pointer;
+            will-change: transform, filter;
         }
 
         .galeria-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            filter: blur(2px) brightness(0.85);
+            transform: scale(0.94) translateZ(0);
+            backface-visibility: hidden;
+            will-change: transform, filter;
         }
 
-        .galeria-item:active img { transform: scale(1.02); }
+        .galeria-item.active img {
+            filter: blur(0) brightness(1);
+            transform: scale(1) translateZ(0);
+        }
+
+        .galeria-item:active img { transform: scale(1.02) translateZ(0); }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .galeria-item img {
+                transition: filter 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
 
         .galeria-overlay {
             position: absolute;
@@ -1560,16 +1575,19 @@
         const totalPhotos = qsa('.galeria-item').length;
         let currentIndex = 0;
 
-        // Build dots
+        // Build dots + set initial active item
+        const galeriaItems = qsa('.galeria-item');
         for (let i = 0; i < totalPhotos; i++) {
             const dot = document.createElement('div');
             dot.className = 'galeria-dot-item' + (i === 0 ? ' active' : '');
             dotsContainer.appendChild(dot);
         }
+        if (galeriaItems[0]) galeriaItems[0].classList.add('active');
 
         function updateCarousel() {
             if (wrapper) wrapper.style.transform = `translateX(${-currentIndex * 100}%)`;
             qsa('.galeria-dot-item').forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+            qsa('.galeria-item').forEach((item, i) => item.classList.toggle('active', i === currentIndex));
         }
 
         $('nextBtn').addEventListener('click', () => { currentIndex = (currentIndex + 1) % totalPhotos; updateCarousel(); });
@@ -1626,7 +1644,7 @@
             'Odeio teu time, mas te amo'
         ];
 
-        const ratoStages = ['rato_com_flor.webp','rato1.png','rato2.png','rato3.png','rato4.png','rato5.png','rato6.png'];
+        const ratoStages = ['rato_com_flor.webp','rato1.webp','rato2.webp','rato3.webp','rato4.webp','rato5.webp','rato6.webp'];
         let ratoClickCount = 0;
         let ratoExploded = false;
 
