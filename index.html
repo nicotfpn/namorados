@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#f5ebe3">
     <meta name="description" content="Uma página especial para os nossos namorados — filmes, fotos e muito amor.">
-    <title>Para o Meu Amor 💕</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Nossa Noite Italiana 🇮🇹</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,600&family=Yellowtail&display=swap" rel="stylesheet">
     <style>
         :root {
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -158,6 +158,94 @@
             box-shadow: var(--shadow-sm);
             overflow: hidden;
         }
+
+        /* ===== CARDAPIO ===== */
+.cardapio-card {
+    position: relative;
+    margin: 0 16px 8px;
+    background: var(--surface);
+    border: 1px solid rgba(140,28,43,0.18);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    padding: 44px 26px 30px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.cardapio-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: repeating-linear-gradient(90deg, #8c1c2b 0 8px, transparent 8px 16px);
+    opacity: 0.55;
+}
+
+.cardapio-ribbon {
+    width: 56px;
+    height: 28px;
+    color: #8c1c2b;
+    margin-bottom: 6px;
+}
+
+.cardapio-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #8c1c2b;
+    margin-bottom: 22px;
+}
+
+.cardapio-item { margin-bottom: 6px; }
+
+.cardapio-curso {
+    font-family: 'Yellowtail', var(--font-serif);
+    font-weight: 400;
+    font-size: 2.1rem;
+    color: #8c1c2b;
+    line-height: 1.1;
+    margin-bottom: 2px;
+}
+
+.cardapio-prato {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #2f5233;
+    margin-bottom: 8px;
+}
+
+.cardapio-desc {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.cardapio-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(140,28,43,0.35);
+    font-size: 1.1rem;
+    margin: 20px 0;
+}
+.cardapio-divider::before, .cardapio-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(140,28,43,0.18);
+    margin: 0 12px;
+    max-width: 60px;
+}
+
+@media (max-width: 360px) {
+    .cardapio-curso { font-size: 1.8rem; }
+}
 
         /* ===== MESSAGE ===== */
         .mensagem-card {
@@ -1194,13 +1282,54 @@
 
         <!-- HEADER -->
         <div class="header">
-            <h1>Feliz Dia dos <span class="accent">Namorados</span></h1>
+            <h1>Nossa Noite <span class="accent">Italiana</span></h1>
             <div class="header-dots">
                 <div class="header-dot"></div>
                 <div class="header-dot"></div>
                 <div class="header-dot"></div>
             </div>
         </div>
+
+<!-- CARDAPIO ITALIA -->
+<div class="cardapio-card">
+    <svg class="cardapio-ribbon" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60 30 C45 15, 20 15, 15 30 C20 45, 45 45, 60 30 C75 45, 100 45, 105 30 C100 15, 75 15, 60 30 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M50 34 L44 50 L52 46 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M70 34 L76 50 L68 46 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="60" cy="30" r="4" fill="currentColor"/>
+    </svg>
+    <p class="cardapio-eyebrow">Uma Noite na Itália</p>
+
+    <div class="cardapio-item">
+        <h3 class="cardapio-curso">Entrada</h3>
+        <p class="cardapio-prato">Bruschetta</p>
+        <p class="cardapio-desc">O começo perfeito: pão crocante, alho, muçarela, tomate, bacon e um toque de mel. Um amor à primeira mordida.</p>
+    </div>
+
+    <div class="cardapio-divider"><span>•</span></div>
+
+    <div class="cardapio-item">
+        <h3 class="cardapio-curso">Prato Principal</h3>
+        <p class="cardapio-prato">Carbonara</p>
+        <p class="cardapio-desc">A clássica carbonara: poucos ingredientes, muito sabor e um motivo a mais para brindar nossa noite.</p>
+    </div>
+
+    <div class="cardapio-divider"><span>•</span></div>
+
+    <div class="cardapio-item">
+        <h3 class="cardapio-curso">Sobremesa</h3>
+        <p class="cardapio-prato">Canollis</p>
+        <p class="cardapio-desc">O doce perfeito para terminar a noite... ou para começar a próxima.</p>
+    </div>
+
+    <div class="cardapio-divider"><span>•</span></div>
+
+    <div class="cardapio-item">
+        <h3 class="cardapio-curso">Drink</h3>
+        <p class="cardapio-prato">Vinho Tinto Suave</p>
+        <p class="cardapio-desc">Para brindar ao amor, às risadas e aos momentos que ficam na memória. Cin cin!</p>
+    </div>
+</div>
 
         <!-- MESSAGE -->
         <div class="mensagem-card">
