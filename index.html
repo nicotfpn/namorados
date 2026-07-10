@@ -446,40 +446,92 @@
         .rato-reveal .emoji {
             font-size: 4.2rem;
             display: block;
-            filter: drop-shadow(0 0 18px rgba(255,193,7,0.65));
-            animation: ratoGlowPulse 1.6s ease-in-out infinite;
+            filter: drop-shadow(0 0 18px rgba(255,193,7,0.55));
+            animation: ratoEmojiPop 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes ratoEmojiPop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .rato-reveal .eyebrow {
+            display: block;
+            font-family: var(--font-body);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(168,66,76,0.65);
+            margin-top: 14px;
+            opacity: 0;
+            animation: ratoTextRise 0.6s ease-out forwards;
+            animation-delay: 0.25s;
         }
         .rato-reveal .text {
-            margin-top: 6px;
-            font-size: 1.5rem;
+            display: block;
+            margin-top: 4px;
+            font-family: var(--font-serif);
+            font-size: 1.7rem;
             font-weight: 600;
-            font-style: italic;
-            color: var(--text);
-            text-shadow: 0 0 16px rgba(255,193,7,0.4);
+            font-style: normal;
+            letter-spacing: 0.01em;
+            color: var(--rose-dark);
+            background: linear-gradient(135deg, #c8860a 0%, #e8b93a 40%, #a8424c 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            opacity: 0;
+            animation: ratoTextRise 0.6s ease-out forwards;
+            animation-delay: 0.4s;
+        }
+        @keyframes ratoTextRise {
+            0%   { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
         @keyframes ratoReveal {
-            0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-            60%  { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+            0%   { transform: translate(-50%, -50%) scale(0.92); opacity: 0; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
-        @keyframes ratoGlowPulse {
-            0%, 100% { filter: drop-shadow(0 0 14px rgba(255,193,7,0.55)); transform: scale(1); }
-            50%      { filter: drop-shadow(0 0 26px rgba(255,193,7,0.9)); transform: scale(1.08); }
+
+        .rato-petal {
+            position: fixed;
+            top: -5%;
+            font-size: var(--petsize, 1.2rem);
+            left: var(--petx);
+            opacity: 0.85;
+            pointer-events: none;
+            z-index: 9997;
+            animation: ratoPetalFall var(--petdur, 3.5s) ease-in forwards;
+            animation-delay: var(--petdelay, 0s);
+        }
+        @keyframes ratoPetalFall {
+            0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10%  { opacity: 0.85; }
+            100% { transform: translateY(110vh) rotate(280deg); opacity: 0; }
         }
 
         .girassol-final {
+            position: relative;
             display: inline-block;
-            font-size: 3.2rem;
-            animation: girassolSpin 4s linear infinite, girassolPulseGlow 2s ease-in-out infinite;
-            filter: drop-shadow(0 0 10px rgba(255,193,7,0.5));
+            font-size: 3.4rem;
+            animation: girassolBreathe 3.2s ease-in-out infinite;
+            transform-origin: 50% 85%;
         }
-        @keyframes girassolSpin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+        .girassol-final::before {
+            content: '';
+            position: absolute;
+            inset: -30%;
+            background: radial-gradient(circle, rgba(255,193,7,0.45) 0%, rgba(255,193,7,0) 70%);
+            z-index: -1;
+            animation: girassolAura 3.2s ease-in-out infinite;
         }
-        @keyframes girassolPulseGlow {
-            0%, 100% { filter: drop-shadow(0 0 8px rgba(255,193,7,0.4)); }
-            50%      { filter: drop-shadow(0 0 20px rgba(255,193,7,0.85)); }
+        @keyframes girassolBreathe {
+            0%, 100% { transform: rotate(-5deg) scale(1); }
+            50%      { transform: rotate(5deg) scale(1.06); }
+        }
+        @keyframes girassolAura {
+            0%, 100% { opacity: 0.5; transform: scale(0.9); }
+            50%      { opacity: 1; transform: scale(1.15); }
         }
 
         /* ===== LETTERBOXD SECTION ===== */
@@ -1777,8 +1829,21 @@
 
                     const reveal = document.createElement('div');
                     reveal.className = 'rato-reveal';
-                    reveal.innerHTML = '<span class="emoji">🌻</span><span class="text">Eu te amo</span>';
+                    reveal.innerHTML = '<span class="emoji">🌻</span><span class="eyebrow">Para você</span><span class="text">Eu te amo</span>';
                     document.body.appendChild(reveal);
+
+                    for (let i = 0; i < 14; i++) {
+                        const petal = document.createElement('span');
+                        petal.className = 'rato-petal';
+                        petal.textContent = '🌼';
+                        petal.style.setProperty('--petx', Math.random() * 100 + 'vw');
+                        petal.style.setProperty('--petsize', (0.9 + Math.random() * 0.8).toFixed(2) + 'rem');
+                        petal.style.setProperty('--petdur', (2.8 + Math.random() * 1.4).toFixed(2) + 's');
+                        petal.style.setProperty('--petdelay', (Math.random() * 0.8).toFixed(2) + 's');
+                        document.body.appendChild(petal);
+                        setTimeout(() => petal.remove(), 5000);
+                    }
+
                     setTimeout(() => reveal.remove(), 2600);
                 }, 500);
 
