@@ -366,6 +366,41 @@
             pointer-events: auto;
         }
 
+        .ratinho-btn img {
+            transition: transform 0.2s ease, box-shadow var(--transition);
+        }
+
+        .ratinho-btn img.rato-grow {
+            transform: scale(1.15);
+        }
+
+        .ratinho-btn img.rato-explode {
+            animation: ratoExplode 0.5s ease forwards;
+        }
+
+        @keyframes ratoExplode {
+            0%   { transform: translateX(0) scale(1); opacity: 1; }
+            10%  { transform: translateX(-6px) scale(1); }
+            20%  { transform: translateX(6px) scale(1); }
+            30%  { transform: translateX(-6px) scale(1.05); }
+            40%  { transform: translateX(6px) scale(1.1); }
+            50%  { transform: translateX(-6px) scale(1.15); }
+            60%  { transform: translateX(6px) scale(1.2); }
+            80%  { transform: scale(1.4); opacity: 0.5; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        .girassol-spin {
+            display: inline-block;
+            font-size: 3rem;
+            animation: girassolSpin 3s linear infinite;
+        }
+
+        @keyframes girassolSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* ===== LETTERBOXD SECTION ===== */
         .letterboxd-section {
             margin: 0 16px;
@@ -1591,11 +1626,33 @@
             'Odeio teu time, mas te amo'
         ];
 
+        const ratoStages = ['rato_com_flor.webp','rato1.png','rato2.png','rato3.png','rato4.png','rato5.png','rato6.png'];
+        let ratoClickCount = 0;
+        let ratoExploded = false;
+
         $('ratinhoBtn').addEventListener('click', () => {
-            const msg = ratinhoMessages[Math.floor(Math.random() * ratinhoMessages.length)];
-            const el = $('ratinhoMsg');
-            el.textContent = msg;
-            el.classList.add('visible');
+            if (ratoExploded) return; // TODO: opcionalmente resetar tudo
+
+            const img = $('ratinhoBtn').querySelector('img');
+            const msgEl = $('ratinhoMsg');
+
+            if (ratoClickCount < ratoStages.length - 1) {
+                ratoClickCount++;
+                img.src = ratoStages[ratoClickCount];
+                img.classList.add('rato-grow');
+                setTimeout(() => img.classList.remove('rato-grow'), 300);
+                const msg = ratinhoMessages[Math.floor(Math.random() * ratinhoMessages.length)];
+                msgEl.textContent = msg;
+                msgEl.classList.add('visible');
+            } else {
+                ratoExploded = true;
+                img.classList.add('rato-explode');
+                setTimeout(() => {
+                    $('ratinhoBtn').innerHTML = '<span class="girassol-spin">🌻</span>';
+                }, 550);
+                msgEl.textContent = 'Eu te amo 🌻';
+                msgEl.classList.add('visible');
+            }
         });
 
         // ===== CALENDAR =====
