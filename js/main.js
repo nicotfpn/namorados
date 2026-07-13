@@ -19,7 +19,7 @@ const ratingStars = (rating) => {
 };
 
 const showRatingNum = (rating) => {
-    if (rating === null || rating === undefined || rating === '') return '—';
+    if (rating === null || rating === undefined || rating === '' || rating === 0) return '—';
     return `${rating}/5`;
 };
 
@@ -73,11 +73,13 @@ function normalizeReview(r, i) {
         const isOld = !('ratingNico' in r) && !('ratingNick' in r);
         const nico = isOld ? Number(r.rating) : (r.ratingNico !== undefined && r.ratingNico !== null && r.ratingNico !== '') ? Number(r.ratingNico) : null;
         const nick = isOld ? Number(r.rating) : (r.ratingNick !== undefined && r.ratingNick !== null && r.ratingNick !== '') ? Number(r.ratingNick) : null;
+        const nicoEff = nico === 0 ? null : nico;
+        const nickEff = nick === 0 ? null : nick;
         let avg;
-        if (nico === null && nick === null) avg = null;
-        else if (nico === null) avg = nick;
-        else if (nick === null) avg = nico;
-        else avg = (nico + nick) / 2;
+        if (nicoEff === null && nickEff === null) avg = null;
+        else if (nicoEff === null) avg = nickEff;
+        else if (nickEff === null) avg = nicoEff;
+        else avg = (nicoEff + nickEff) / 2;
         return {
             movie: (r.movie || '').toString().trim() || `Filme ${i + 1}`,
             date: r.date || '',
@@ -256,8 +258,8 @@ const updateRatingDisplay = () => {
     if (!display) return;
     const nv = nEl.value, kv = kEl.value;
     if (!nv && !kv) { display.value = ''; return; }
-    const n = nv ? Number(nv) : null;
-    const k = kv ? Number(kv) : null;
+    const n = nv && Number(nv) !== 0 ? Number(nv) : null;
+    const k = kv && Number(kv) !== 0 ? Number(kv) : null;
     let avg;
     if (n === null && k === null) avg = null;
     else if (n === null) avg = k;
@@ -291,8 +293,10 @@ $('reviewForm').addEventListener('submit', e => {
         return;
     }
 
-    const n = ratingNico !== '' ? Number(ratingNico) : null;
-    const k = ratingNick !== '' ? Number(ratingNick) : null;
+    const nRaw = ratingNico !== '' ? Number(ratingNico) : null;
+    const kRaw = ratingNick !== '' ? Number(ratingNick) : null;
+    const n = nRaw === 0 ? null : nRaw;
+    const k = kRaw === 0 ? null : kRaw;
     let avg;
     if (n === null && k === null) avg = null;
     else if (n === null) avg = k;
@@ -301,8 +305,8 @@ $('reviewForm').addEventListener('submit', e => {
     const payload = {
         movie: movieName,
         date: movieDate,
-        ratingNico: n,
-        ratingNick: k,
+        ratingNico: nRaw,
+        ratingNick: kRaw,
         rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
         commentNico,
         commentNick
