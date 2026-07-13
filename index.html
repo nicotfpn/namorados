@@ -1410,8 +1410,8 @@
                     <div class="form-row-2" style="margin-top:14px;">
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label" for="ratingNico">Nota do Nico</label>
-                            <select class="form-input" id="ratingNico" required>
-                                <option value="" disabled selected>Selecionar</option>
+                            <select class="form-input" id="ratingNico">
+                                <option value="">Selecionar</option>
                                 <option value="1">⭐ 1</option>
                                 <option value="2">⭐⭐ 2</option>
                                 <option value="3">⭐⭐⭐ 3</option>
@@ -1422,8 +1422,8 @@
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label" for="ratingNick">Nota da Nick</label>
-                            <select class="form-input" id="ratingNick" required>
-                                <option value="" disabled selected>Selecionar</option>
+                            <select class="form-input" id="ratingNick">
+                                <option value="">Selecionar</option>
                                 <option value="1">⭐ 1</option>
                                 <option value="2">⭐⭐ 2</option>
                                 <option value="3">⭐⭐⭐ 3</option>
@@ -1441,12 +1441,12 @@
 
                     <div class="form-group">
                         <label class="form-label" for="commentNico">O que o Nico achou?</label>
-                        <textarea class="form-input" id="commentNico" placeholder="Resenha do Nico..." rows="2" required></textarea>
+                        <textarea class="form-input" id="commentNico" placeholder="Resenha do Nico..." rows="2"></textarea>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="commentNick">O que a Nick achou?</label>
-                        <textarea class="form-input" id="commentNick" placeholder="Resenha da Nick..." rows="2" required></textarea>
+                        <textarea class="form-input" id="commentNick" placeholder="Resenha da Nick..." rows="2"></textarea>
                     </div>
 
                     <button type="submit" class="submit-btn" id="submitBtn">Adicionar filme</button>
@@ -1510,11 +1510,17 @@
         };
 
         const ratingStars = (rating) => {
-            const n = Number(rating) || 0;
+            if (rating === null || rating === undefined || rating === '') return 'Sem nota';
+            const n = Number(rating);
             if (n === 0) return '😴😴😴😴😴';
             const full = Math.floor(n);
             const half = n % 1 >= 0.5 ? '½' : '';
             return '⭐'.repeat(full) + half;
+        };
+
+        const showRatingNum = (rating) => {
+            if (rating === null || rating === undefined || rating === '') return '—';
+            return `${rating}/5`;
         };
 
         const formatDateBR = (dateStr) => {
@@ -1565,19 +1571,19 @@
         function normalizeReview(r, i) {
             try {
                 const isOld = !('ratingNico' in r) && !('ratingNick' in r);
-                const nico = isOld ? Number(r.rating) : Number(r.ratingNico) || 0;
-                const nick = isOld ? Number(r.rating) : Number(r.ratingNick) || 0;
+                const nico = isOld ? Number(r.rating) : (r.ratingNico !== undefined && r.ratingNico !== null && r.ratingNico !== '') ? Number(r.ratingNico) : null;
+                const nick = isOld ? Number(r.rating) : (r.ratingNick !== undefined && r.ratingNick !== null && r.ratingNick !== '') ? Number(r.ratingNick) : null;
                 let avg;
-                if (nico === 0 && nick === 0) avg = 0;
-                else if (nico === 0) avg = nick;
-                else if (nick === 0) avg = nico;
+                if (nico === null && nick === null) avg = null;
+                else if (nico === null) avg = nick;
+                else if (nick === null) avg = nico;
                 else avg = (nico + nick) / 2;
                 return {
                     movie: (r.movie || '').toString().trim() || `Filme ${i + 1}`,
                     date: r.date || '',
                     ratingNico: nico,
                     ratingNick: nick,
-                    rating: Number.isInteger(avg) ? avg : +avg.toFixed(1),
+                    rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
                     commentNico: typeof r.commentNico === 'string' && r.commentNico.trim() ? r.commentNico.trim() : (isOld ? (r.comment || '') : ''),
                     commentNick: typeof r.commentNick === 'string' && r.commentNick.trim() ? r.commentNick.trim() : (isOld ? (r.comment || '') : '')
                 };
@@ -1627,8 +1633,7 @@
                         <div class="movie-date">${formatDateBR(r.date)}</div>
                     </div>
                     <div class="movie-score">
-                        <span class="movie-score-star">⭐</span>
-                        <span class="movie-score-num">${r.rating}</span>
+                        ${r.rating !== null ? `<span class="movie-score-star">⭐</span><span class="movie-score-num">${r.rating}</span>` : `<span class="movie-score-num">—</span>`}
                     </div>
                     <span class="movie-chevron">›</span>
                 `;
@@ -1660,16 +1665,16 @@
                 <div class="rating-chip">
                     <span class="rating-chip-label">Nico</span>
                     <span class="rating-chip-stars">${ratingStars(r.ratingNico)}</span>
-                    <span class="rating-chip-num">${r.ratingNico}/5</span>
+                    <span class="rating-chip-num">${showRatingNum(r.ratingNico)}</span>
                 </div>
                 <div class="rating-chip">
                     <span class="rating-chip-label">Nick</span>
                     <span class="rating-chip-stars">${ratingStars(r.ratingNick)}</span>
-                    <span class="rating-chip-num">${r.ratingNick}/5</span>
+                    <span class="rating-chip-num">${showRatingNum(r.ratingNick)}</span>
                 </div>
                 <div class="rating-chip geral">
                     <span class="rating-chip-label">Geral</span>
-                    <span class="rating-chip-num" style="font-size:1rem;margin-top:0;">${r.rating}/5</span>
+                    <span class="rating-chip-num" style="font-size:1rem;margin-top:0;">${showRatingNum(r.rating)}</span>
                 </div>
             `;
 
@@ -1725,8 +1730,8 @@
             const r = reviews[index];
             $('movieName').value = r.movie;
             $('movieDate').value = r.date;
-            $('ratingNico').value = String(r.ratingNico);
-            $('ratingNick').value = String(r.ratingNick);
+            $('ratingNico').value = r.ratingNico !== null ? String(r.ratingNico) : '';
+            $('ratingNick').value = r.ratingNick !== null ? String(r.ratingNick) : '';
             $('commentNico').value = r.commentNico || '';
             $('commentNick').value = r.commentNick || '';
             updateRatingDisplay();
@@ -1750,14 +1755,15 @@
             const display = $('ratingDisplay');
             if (!display) return;
             const nv = nEl.value, kv = kEl.value;
-            if (!nv || !kv) { display.value = ''; return; }
-            const n = Number(nv), k = Number(kv);
+            if (!nv && !kv) { display.value = ''; return; }
+            const n = nv ? Number(nv) : null;
+            const k = kv ? Number(kv) : null;
             let avg;
-            if (n === 0 && k === 0) avg = 0;
-            else if (n === 0) avg = k;
-            else if (k === 0) avg = n;
+            if (n === null && k === null) avg = null;
+            else if (n === null) avg = k;
+            else if (k === null) avg = n;
             else avg = (n + k) / 2;
-            display.value = `${Number.isInteger(avg) ? avg : avg.toFixed(1)}/5`;
+            display.value = avg !== null ? `${Number.isInteger(avg) ? avg : avg.toFixed(1)}/5` : '';
         };
 
         $('ratingNico').addEventListener('change', updateRatingDisplay);
@@ -1775,23 +1781,29 @@
             const commentNico = $('commentNico').value.trim();
             const commentNick = $('commentNick').value.trim();
 
-            if (!movieName || !movieDate || !ratingNico || !ratingNick || !commentNico || !commentNick) {
-                alert('Preencha todos os campos antes de adicionar o filme.');
+            if (!movieName || !movieDate) {
+                alert('Preencha pelo menos o nome do filme e a data.');
                 return;
             }
 
-            const n = Number(ratingNico), k = Number(ratingNick);
+            if (!ratingNico && !ratingNick && !commentNico && !commentNick) {
+                alert('Preencha a nota ou a resenha de pelo menos um de vocês.');
+                return;
+            }
+
+            const n = ratingNico !== '' ? Number(ratingNico) : null;
+            const k = ratingNick !== '' ? Number(ratingNick) : null;
             let avg;
-            if (n === 0 && k === 0) avg = 0;
-            else if (n === 0) avg = k;
-            else if (k === 0) avg = n;
+            if (n === null && k === null) avg = null;
+            else if (n === null) avg = k;
+            else if (k === null) avg = n;
             else avg = (n + k) / 2;
             const payload = {
                 movie: movieName,
                 date: movieDate,
                 ratingNico: n,
                 ratingNick: k,
-                rating: Number.isInteger(avg) ? avg : +avg.toFixed(1),
+                rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
                 commentNico,
                 commentNick
             };
