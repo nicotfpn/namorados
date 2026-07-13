@@ -1,10 +1,12 @@
-const CACHE_NAME = 'noite-italiana-v1';
+const CACHE_NAME = 'noite-italiana-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/css/style.css',
+  '/js/main.js',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
