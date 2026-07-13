@@ -1430,6 +1430,49 @@
             height: 40px;
         }
 
+        /* ===== REFRESH BUTTON ===== */
+        .refresh-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999;
+            color: var(--rose);
+            transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.08) rotate(15deg);
+            background: #fffdfb;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95) rotate(-15deg);
+        }
+
+        .refresh-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2.5;
+            transition: transform 0.4s ease;
+        }
+
+        .refresh-btn:hover svg {
+            transform: rotate(180deg);
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (min-width: 481px) {
             .page-wrapper {
@@ -1465,6 +1508,12 @@
 </head>
 
 <body>
+    <button class="refresh-btn" id="refreshBtn" aria-label="Recarregar página" title="Recarregar página">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+    </button>
     <div class="page-wrapper">
 
         <!-- HEADER -->
@@ -2080,10 +2129,17 @@
         let ratoExploded = false;
 
         $('ratinhoBtn').addEventListener('click', () => {
-            if (ratoExploded) return; // TODO: opcionalmente resetar tudo
+            const msgEl = $('ratinhoMsg');
+            if (ratoExploded) {
+                ratoExploded = false;
+                ratoClickCount = 0;
+                $('ratinhoBtn').innerHTML = '<img src="rato_com_flor.webp" alt="Ratinho com flores" loading="lazy" decoding="async">';
+                msgEl.textContent = 'Clique no ratinho para ver o que eu amo em você';
+                msgEl.classList.remove('visible');
+                return;
+            }
 
             const img = $('ratinhoBtn').querySelector('img');
-            const msgEl = $('ratinhoMsg');
 
             if (ratoClickCount < ratoStages.length - 1) {
                 ratoClickCount++;
@@ -2248,6 +2304,10 @@
             } else if (calendarModal.classList.contains('open')) {
                 setModalOpen(calendarModal, false);
             }
+        });
+
+        $('refreshBtn').addEventListener('click', () => {
+            window.location.reload();
         });
 
         // ===== INIT =====
