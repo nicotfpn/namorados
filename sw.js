@@ -1,4 +1,4 @@
-const CACHE_NAME = 'noite-italiana-v2';
+const CACHE_NAME = 'nossas-noites-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -27,6 +27,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/api/')) return;
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const network = fetch(event.request)
