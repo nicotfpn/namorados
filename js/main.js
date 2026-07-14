@@ -39,13 +39,21 @@ const formatDateBR = (dateStr) => {
     return `${d}/${m}/${y}`;
 };
 
-// ===== STORAGE (sincronizado via Upstash Redis) =====
+// ===== STORAGE (sincronizado via Upstash Redis / Electron IPC) =====
 const storageKey = 'letterboxdReviews';
 let reviewsCache = null;
+const isElectron = typeof window !== 'undefined' && typeof window.electronAPI !== 'undefined';
 
 const storage = {
     async get() {
         if (reviewsCache && Array.isArray(reviewsCache)) return [...reviewsCache];
+        if (isElectron) {
+            try {
+                reviewsCache = await window.electronAPI.getReviews();
+                if (!Array.isArray(reviewsCache)) reviewsCache = [];
+                return [...reviewsCache];
+            } catch { }
+        }
         try {
             const resp = await fetch('/api/reviews');
             if (resp.ok) {
@@ -63,6 +71,13 @@ const storage = {
     },
     async saveReview(review) {
         if (!review || !review.id) return;
+        if (isElectron) {
+            try {
+                const reviews = await window.electronAPI.saveReview(review);
+                if (Array.isArray(reviews)) reviewsCache = reviews;
+                return true;
+            } catch { }
+        }
         try {
             const resp = await fetch('/api/reviews', {
                 method: 'POST',
@@ -86,6 +101,13 @@ const storage = {
         return false;
     },
     async deleteReview(id) {
+        if (isElectron) {
+            try {
+                const reviews = await window.electronAPI.deleteReview(id);
+                if (Array.isArray(reviews)) reviewsCache = reviews;
+                return true;
+            } catch { }
+        }
         try {
             const resp = await fetch('/api/reviews', {
                 method: 'POST',
@@ -696,6 +718,6 @@ if ('IntersectionObserver' in window) {
 // ===== INIT =====
 loadReviews();
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !isElectron) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
 }
