@@ -99,14 +99,17 @@ body {
 .header h1 {
     font-family: var(--font-serif);
     font-size: clamp(1.8rem, 6vw, 2.4rem);
-    font-weight: 600;
+    font-weight: 400;
+    font-style: italic;
     color: var(--text);
-    line-height: 1.15;
-    letter-spacing: -0.3px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
 }
 
 .header h1 .accent {
     color: var(--rose);
+    font-weight: 600;
+    font-style: italic;
 }
 
 .header-rule {
