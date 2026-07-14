@@ -1,4 +1,7 @@
-const CACHE_NAME = 'noites-tematicas-v1';
+// CACHE_NAME: incrementar manualmente a cada deploy que muda HTML/CSS/JS.
+// Ex: 'noites-tematicas-v1' -> 'noites-tematicas-v2' -> v3, etc.
+const CACHE_NAME = 'noites-tematicas-v2';
+
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -28,9 +31,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('/api/')) return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request)
+
+  const url = new URL(event.request.url);
+  const isAppShell = APP_SHELL.some(path => url.pathname === path || url.pathname === path.replace(/^\//, ''));
+
+  if (isAppShell) {
+    event.respondWith(
+      fetch(event.request)
         .then((res) => {
           if (res.ok) {
             const clone = res.clone();
@@ -38,8 +45,22 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        const network = fetch(event.request)
+          .then((res) => {
+            if (res.ok) {
+              const clone = res.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return res;
+          })
+          .catch(() => cached);
+        return cached || network;
+      })
+    );
+  }
 });

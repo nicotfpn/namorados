@@ -3,6 +3,12 @@ const $ = (id) => document.getElementById(id);
 const qsa = (sel, scope = document) => [...scope.querySelectorAll(sel)];
 const isActivationKey = (e) => e.key === 'Enter' || e.key === ' ';
 
+// App secret para autenticação nas rotas POST da API.
+// Em ambientes serverless (Vercel etc.), env vars no frontend são públicas por natureza.
+// Para esconder de verdade, use um proxy/API route que injete o secret no server-side.
+// Mesmo assim, a checagem no backend é mantida como barreira básica.
+const APP_SECRET = '';
+
 function generateId() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -11,6 +17,21 @@ function generateId() {
 function escapeHtml(str) {
     if (typeof str !== 'string') return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function calcAverageRating(nicoRaw, nickRaw) {
+    const n = nicoRaw === 0 ? null : nicoRaw;
+    const k = nickRaw === 0 ? null : nickRaw;
+    let avg;
+    if (n === null && k === null) avg = null;
+    else if (n === null) avg = k;
+    else if (k === null) avg = n;
+    else avg = (n + k) / 2;
+    return {
+        nico: nicoRaw,
+        nick: nickRaw,
+        avg: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null
+    };
 }
 
 const setModalOpen = (modal, isOpen) => {
@@ -81,7 +102,7 @@ const storage = {
         try {
             const resp = await fetch('/api/reviews', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...(APP_SECRET ? { 'X-App-Secret': APP_SECRET } : {}) },
                 body: JSON.stringify({ op: 'upsert', review })
             });
             if (resp.ok) {
@@ -111,7 +132,7 @@ const storage = {
         try {
             const resp = await fetch('/api/reviews', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...(APP_SECRET ? { 'X-App-Secret': APP_SECRET } : {}) },
                 body: JSON.stringify({ op: 'delete', id })
             });
             if (resp.ok) {
@@ -139,22 +160,21 @@ function normalizeReview(r, i) {
     try {
         const id = r.id || generateId();
         const isOld = !('ratingNico' in r) && !('ratingNick' in r);
-        const nico = isOld ? Number(r.rating) : (r.ratingNico !== undefined && r.ratingNico !== null && r.ratingNico !== '') ? Number(r.ratingNico) : null;
-        const nick = isOld ? Number(r.rating) : (r.ratingNick !== undefined && r.ratingNick !== null && r.ratingNick !== '') ? Number(r.ratingNick) : null;
-        const nicoEff = nico === 0 ? null : nico;
-        const nickEff = nick === 0 ? null : nick;
-        let avg;
-        if (nicoEff === null && nickEff === null) avg = null;
-        else if (nicoEff === null) avg = nickEff;
-        else if (nickEff === null) avg = nicoEff;
-        else avg = (nicoEff + nickEff) / 2;
+        const parseRating = (v) => {
+            if (v === undefined || v === null || v === '') return null;
+            const n = Number(v);
+            return Number.isNaN(n) ? null : n;
+        };
+        const nicoParsed = isOld ? parseRating(r.rating) : parseRating(r.ratingNico);
+        const nickParsed = isOld ? parseRating(r.rating) : parseRating(r.ratingNick);
+        const { nico, nick, avg } = calcAverageRating(nicoParsed, nickParsed);
         return {
             id,
             movie: (r.movie || '').toString().trim() || `Filme ${i + 1}`,
             date: r.date || '',
             ratingNico: nico,
             ratingNick: nick,
-            rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
+            rating: avg,
             commentNico: typeof r.commentNico === 'string' && r.commentNico.trim() ? r.commentNico.trim() : (isOld ? (r.comment || '') : ''),
             commentNick: typeof r.commentNick === 'string' && r.commentNick.trim() ? r.commentNick.trim() : (isOld ? (r.comment || '') : '')
         };
@@ -317,14 +337,10 @@ const updateRatingDisplay = () => {
     if (!display) return;
     const nv = nEl.value, kv = kEl.value;
     if (!nv && !kv) { display.value = ''; return; }
-    const n = nv && Number(nv) !== 0 ? Number(nv) : null;
-    const k = kv && Number(kv) !== 0 ? Number(kv) : null;
-    let avg;
-    if (n === null && k === null) avg = null;
-    else if (n === null) avg = k;
-    else if (k === null) avg = n;
-    else avg = (n + k) / 2;
-    display.value = avg !== null ? `${Number.isInteger(avg) ? avg : avg.toFixed(1)}/5` : '';
+    const nParsed = nv !== '' ? Number(nv) : null;
+    const kParsed = kv !== '' ? Number(kv) : null;
+    const { avg } = calcAverageRating(nParsed, kParsed);
+    display.value = avg !== null ? `${avg}/5` : '';
 };
 
 $('ratingNico').addEventListener('change', updateRatingDisplay);
@@ -354,13 +370,7 @@ $('reviewForm').addEventListener('submit', async (e) => {
 
     const nRaw = ratingNico !== '' ? Number(ratingNico) : null;
     const kRaw = ratingNick !== '' ? Number(ratingNick) : null;
-    const n = nRaw === 0 ? null : nRaw;
-    const k = kRaw === 0 ? null : kRaw;
-    let avg;
-    if (n === null && k === null) avg = null;
-    else if (n === null) avg = k;
-    else if (k === null) avg = n;
-    else avg = (n + k) / 2;
+    const { nico: calcNico, nick: calcNick, avg } = calcAverageRating(nRaw, kRaw);
 
     let payload;
     if (editingId) {
@@ -368,9 +378,9 @@ $('reviewForm').addEventListener('submit', async (e) => {
             id: editingId,
             movie: movieName,
             date: movieDate,
-            ratingNico: nRaw,
-            ratingNick: kRaw,
-            rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
+            ratingNico: calcNico,
+            ratingNick: calcNick,
+            rating: avg,
             commentNico,
             commentNick
         };
@@ -382,9 +392,9 @@ $('reviewForm').addEventListener('submit', async (e) => {
             id: generateId(),
             movie: movieName,
             date: movieDate,
-            ratingNico: nRaw,
-            ratingNick: kRaw,
-            rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
+            ratingNico: calcNico,
+            ratingNick: calcNick,
+            rating: avg,
             commentNico,
             commentNick
         };
