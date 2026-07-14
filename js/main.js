@@ -139,14 +139,6 @@ function normalizeReview(r, i) {
     } catch { return null; }
 }
 
-const defaultReviews = [{
-    movie: 'Tudo em Todo Lugar ao Mesmo Tempo',
-    date: '2026-06-14',
-    ratingNico: 5, ratingNick: 5, rating: 5,
-    commentNico: 'MELHOR FILME DE TODOS!! HAHAHAHA',
-    commentNick: 'Amei demais, quero ver de novo!'
-}];
-
 function loadReviews() {
     return storage.get().then(items => {
         const normalized = items.map((r, i) => normalizeReview(r, i)).filter(Boolean);
