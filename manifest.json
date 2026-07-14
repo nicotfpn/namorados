@@ -1,7 +1,7 @@
 {
   "name": "Nossas Noites Temáticas",
   "short_name": "Nossas Noites",
-  "description": "Uma noite especial pra nós dois",
+  "description": "Nossas noites temáticas — filmes, fotos e muito amor",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

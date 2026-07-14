@@ -763,6 +763,13 @@ body {
     overflow: hidden;
 }
 
+.empty-state {
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
 .movie-item {
     display: flex;
     align-items: center;

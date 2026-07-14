@@ -3,6 +3,16 @@ const $ = (id) => document.getElementById(id);
 const qsa = (sel, scope = document) => [...scope.querySelectorAll(sel)];
 const isActivationKey = (e) => e.key === 'Enter' || e.key === ' ';
 
+function generateId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
+function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 const setModalOpen = (modal, isOpen) => {
     modal.classList.toggle('open', isOpen);
     modal.setAttribute('aria-hidden', String(!isOpen));
@@ -51,25 +61,61 @@ const storage = {
         } catch { reviewsCache = []; }
         return [...reviewsCache];
     },
-    async set(items) {
-        reviewsCache = [...items];
-        try { localStorage.setItem(storageKey, JSON.stringify(items)); } catch { }
+    async saveReview(review) {
+        if (!review || !review.id) return;
         try {
-            await fetch('/api/reviews', {
+            const resp = await fetch('/api/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reviews: items })
+                body: JSON.stringify({ op: 'upsert', review })
             });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data.reviews)) {
+                    reviewsCache = data.reviews;
+                    try { localStorage.setItem(storageKey, JSON.stringify(reviewsCache)); } catch { }
+                }
+                return true;
+            }
         } catch { }
+        if (reviewsCache) {
+            const idx = reviewsCache.findIndex(r => r.id === review.id);
+            if (idx >= 0) reviewsCache[idx] = review; else reviewsCache.push(review);
+            try { localStorage.setItem(storageKey, JSON.stringify(reviewsCache)); } catch { }
+        }
+        return false;
+    },
+    async deleteReview(id) {
+        try {
+            const resp = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ op: 'delete', id })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data.reviews)) {
+                    reviewsCache = data.reviews;
+                    try { localStorage.setItem(storageKey, JSON.stringify(reviewsCache)); } catch { }
+                }
+                return true;
+            }
+        } catch { }
+        if (reviewsCache) {
+            reviewsCache = reviewsCache.filter(r => r.id !== id);
+            try { localStorage.setItem(storageKey, JSON.stringify(reviewsCache)); } catch { }
+        }
+        return false;
     }
 };
 
 // ===== STATE =====
 let reviews = [];
-let editingIndex = null;
+let editingId = null;
 
 function normalizeReview(r, i) {
     try {
+        const id = r.id || generateId();
         const isOld = !('ratingNico' in r) && !('ratingNick' in r);
         const nico = isOld ? Number(r.rating) : (r.ratingNico !== undefined && r.ratingNico !== null && r.ratingNico !== '') ? Number(r.ratingNico) : null;
         const nick = isOld ? Number(r.rating) : (r.ratingNick !== undefined && r.ratingNick !== null && r.ratingNick !== '') ? Number(r.ratingNick) : null;
@@ -81,6 +127,7 @@ function normalizeReview(r, i) {
         else if (nickEff === null) avg = nicoEff;
         else avg = (nicoEff + nickEff) / 2;
         return {
+            id,
             movie: (r.movie || '').toString().trim() || `Filme ${i + 1}`,
             date: r.date || '',
             ratingNico: nico,
@@ -103,23 +150,22 @@ const defaultReviews = [{
 function loadReviews() {
     return storage.get().then(items => {
         const normalized = items.map((r, i) => normalizeReview(r, i)).filter(Boolean);
-        reviews = normalized.length ? normalized : [...defaultReviews];
+        reviews = normalized.length ? normalized : [];
         renderReviews(reviews);
     }).catch(() => {
-        reviews = [...defaultReviews];
+        reviews = [];
         renderReviews(reviews);
     });
-}
-
-function persistReviews() {
-    storage.set(reviews);
-    renderReviews(reviews);
 }
 
 // ===== RENDER LIST =====
 function renderReviews(list) {
     const body = $('planilhaBody');
     if (!body) return;
+    if (!list.length) {
+        body.innerHTML = '<p class="empty-state">Nenhum filme ainda — adicione o primeiro!</p>';
+        return;
+    }
     const frag = document.createDocumentFragment();
     list.forEach((r, i) => {
         const item = document.createElement('div');
@@ -131,7 +177,7 @@ function renderReviews(list) {
         item.innerHTML = `
             <span class="movie-rank">${i + 1}</span>
             <div class="movie-info">
-                <div class="movie-title">${r.movie}</div>
+                <div class="movie-title">${escapeHtml(r.movie)}</div>
                 <div class="movie-date">${formatDateBR(r.date)}</div>
             </div>
             <div class="movie-score">
@@ -140,8 +186,8 @@ function renderReviews(list) {
             <span class="movie-chevron">›</span>
         `;
 
-        item.addEventListener('click', () => openReviewSheet(i));
-        item.addEventListener('keydown', e => { if (isActivationKey(e)) { e.preventDefault(); openReviewSheet(i); } });
+        item.addEventListener('click', () => openReviewSheet(r.id));
+        item.addEventListener('keydown', e => { if (isActivationKey(e)) { e.preventDefault(); openReviewSheet(r.id); } });
         frag.appendChild(item);
     });
     body.replaceChildren(frag);
@@ -155,14 +201,13 @@ const sheetRatings = $('sheetRatings');
 const sheetBubbles = $('sheetBubbles');
 const sheetActions = $('sheetActions');
 
-function openReviewSheet(index) {
-    const r = reviews[index];
+function openReviewSheet(id) {
+    const r = reviews.find(rev => rev.id === id);
     if (!r) return;
 
     sheetTitle.textContent = r.movie;
     sheetDate.textContent = `Assistido em ${formatDateBR(r.date)}`;
 
-    // Ratings
     sheetRatings.innerHTML = `
         <div class="rating-chip">
             <span class="rating-chip-label">Nico</span>
@@ -180,31 +225,29 @@ function openReviewSheet(index) {
         </div>
     `;
 
-    // Bubbles
     sheetBubbles.innerHTML = `
         <div class="bubble nico">
             <div class="bubble-author">Nico</div>
-            <div class="bubble-text">${r.commentNico || 'Sem resenha ainda.'}</div>
+            <div class="bubble-text">${r.commentNico ? escapeHtml(r.commentNico) : 'Sem resenha ainda.'}</div>
         </div>
         <div class="bubble nick">
             <div class="bubble-author">Nick</div>
-            <div class="bubble-text">${r.commentNick || 'Sem resenha ainda.'}</div>
+            <div class="bubble-text">${r.commentNick ? escapeHtml(r.commentNick) : 'Sem resenha ainda.'}</div>
         </div>
     `;
 
-    // Actions
     sheetActions.innerHTML = '';
     const editBtn = document.createElement('button');
     editBtn.className = 'action-btn edit';
     editBtn.textContent = 'Editar';
     editBtn.type = 'button';
-    editBtn.addEventListener('click', () => { closeReviewSheet(); openEditReview(index); });
+    editBtn.addEventListener('click', () => { closeReviewSheet(); openEditReview(id); });
 
     const delBtn = document.createElement('button');
     delBtn.className = 'action-btn delete';
     delBtn.textContent = 'Deletar';
     delBtn.type = 'button';
-    delBtn.addEventListener('click', () => { closeReviewSheet(); deleteReview(index); });
+    delBtn.addEventListener('click', () => { closeReviewSheet(); deleteReview(id); });
 
     sheetActions.appendChild(editBtn);
     sheetActions.appendChild(delBtn);
@@ -227,9 +270,10 @@ reviewSheet.addEventListener('touchend', e => {
 }, { passive: true });
 
 // ===== EDIT / DELETE =====
-function openEditReview(index) {
-    editingIndex = index;
-    const r = reviews[index];
+function openEditReview(id) {
+    const r = reviews.find(rev => rev.id === id);
+    if (!r) return;
+    editingId = id;
     $('movieName').value = r.movie;
     $('movieDate').value = r.date;
     $('ratingNico').value = r.ratingNico !== null ? String(r.ratingNico) : '';
@@ -243,11 +287,12 @@ function openEditReview(index) {
     $('movieName').focus();
 }
 
-function deleteReview(index) {
+async function deleteReview(id) {
     if (!confirm('Deletar esse filme da lista?')) return;
-    reviews.splice(index, 1);
-    persistReviews();
-    editingIndex = null;
+    reviews = reviews.filter(r => r.id !== id);
+    await storage.deleteReview(id);
+    renderReviews(reviews);
+    editingId = null;
 }
 
 // ===== RATING DISPLAY =====
@@ -272,7 +317,7 @@ $('ratingNico').addEventListener('change', updateRatingDisplay);
 $('ratingNick').addEventListener('change', updateRatingDisplay);
 
 // ===== FORM SUBMIT =====
-$('reviewForm').addEventListener('submit', e => {
+$('reviewForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -302,24 +347,38 @@ $('reviewForm').addEventListener('submit', e => {
     else if (n === null) avg = k;
     else if (k === null) avg = n;
     else avg = (n + k) / 2;
-    const payload = {
-        movie: movieName,
-        date: movieDate,
-        ratingNico: nRaw,
-        ratingNick: kRaw,
-        rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
-        commentNico,
-        commentNick
-    };
 
-    if (typeof editingIndex === 'number' && editingIndex >= 0) {
-        reviews[editingIndex] = payload;
-        editingIndex = null;
+    let payload;
+    if (editingId) {
+        payload = {
+            id: editingId,
+            movie: movieName,
+            date: movieDate,
+            ratingNico: nRaw,
+            ratingNick: kRaw,
+            rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
+            commentNico,
+            commentNick
+        };
+        const idx = reviews.findIndex(r => r.id === editingId);
+        if (idx >= 0) reviews[idx] = payload;
+        editingId = null;
     } else {
+        payload = {
+            id: generateId(),
+            movie: movieName,
+            date: movieDate,
+            ratingNico: nRaw,
+            ratingNick: kRaw,
+            rating: avg !== null ? (Number.isInteger(avg) ? avg : +avg.toFixed(1)) : null,
+            commentNico,
+            commentNick
+        };
         reviews.push(payload);
     }
 
-    persistReviews();
+    await storage.saveReview(payload);
+    renderReviews(reviews);
     $('reviewForm').reset();
     updateRatingDisplay();
     $('formTitle').textContent = 'Adicionar filme';
@@ -333,7 +392,6 @@ const dotsContainer = $('galeriaDots');
 const totalPhotos = qsa('.galeria-item').length;
 let currentIndex = 0;
 
-// Build dots + set initial active item
 const galeriaItems = qsa('.galeria-item');
 for (let i = 0; i < totalPhotos; i++) {
     const dot = document.createElement('div');
@@ -351,7 +409,6 @@ function updateCarousel() {
 $('nextBtn').addEventListener('click', () => { currentIndex = (currentIndex + 1) % totalPhotos; updateCarousel(); });
 $('prevBtn').addEventListener('click', () => { currentIndex = (currentIndex - 1 + totalPhotos) % totalPhotos; updateCarousel(); });
 
-// Swipe on gallery
 let galTouchX = 0;
 const galContainer = document.querySelector('.galeria-container');
 galContainer.addEventListener('touchstart', e => { galTouchX = e.touches[0].clientX; }, { passive: true });
@@ -367,7 +424,6 @@ galContainer.addEventListener('touchend', e => {
 
 updateCarousel();
 
-// Gallery lightbox
 qsa('.galeria-item').forEach(item => {
     const img = item.querySelector('img');
     if (!img) return;
@@ -551,9 +607,7 @@ function buildCalendar(date) {
             el.addEventListener('click', (ev) => {
                 ev.stopPropagation();
                 setModalOpen(calendarModal, false);
-                // Open first matching review
-                const idx = reviews.indexOf(matching[0]);
-                setTimeout(() => openReviewSheet(idx), 180);
+                setTimeout(() => openReviewSheet(matching[0].id), 180);
             });
         }
 

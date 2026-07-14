@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nossas-noites-v3';
+const CACHE_NAME = 'noites-tematicas-v1';
 const APP_SHELL = [
   '/',
   '/index.html',
