@@ -642,6 +642,43 @@ $('refreshBtn').addEventListener('click', () => {
     window.location.reload();
 });
 
+// ===== COUNTDOWN =====
+function getNextSaturday() {
+    const now = new Date();
+    const result = new Date(now);
+    const day = now.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7;
+    result.setDate(now.getDate() + daysUntilSaturday);
+    result.setHours(0, 0, 0, 0);
+    return result;
+}
+
+function updateCountdown() {
+    const now = new Date();
+    const day = now.getDay();
+    const digits = $('countdownDigits');
+    const eyebrow = document.querySelector('.countdown-eyebrow');
+    if (day === 0 || day === 6) {
+        digits.style.display = 'none';
+        eyebrow.textContent = 'Fim de semana';
+        return;
+    }
+    digits.style.display = '';
+    eyebrow.textContent = 'Próximo fim de semana';
+    const diff = getNextSaturday() - now;
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    $('cdDays').textContent = String(days).padStart(2, '0');
+    $('cdHours').textContent = String(hours).padStart(2, '0');
+    $('cdMinutes').textContent = String(minutes).padStart(2, '0');
+    $('cdSeconds').textContent = String(seconds).padStart(2, '0');
+}
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
 // ===== INIT =====
 loadReviews();
 
