@@ -664,7 +664,7 @@ function updateCountdown() {
         return;
     }
     digits.style.display = '';
-    eyebrow.textContent = 'Próximo fim de semana';
+    eyebrow.textContent = 'Contando os segundos(literalmente agora) pra te ver s2';
     const diff = getNextSaturday() - now;
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
