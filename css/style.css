@@ -89,28 +89,16 @@ body {
     pointer-events: none;
 }
 
-.header-emoji {
-    font-size: 2.4rem;
+.header-icon {
     display: block;
     margin-bottom: 10px;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-6px);
-    }
+    color: var(--rose);
+    opacity: 0.55;
 }
 
 .header h1 {
     font-family: var(--font-serif);
-    font-size: 1.8rem;
+    font-size: clamp(1.8rem, 6vw, 2.4rem);
     font-weight: 600;
     color: var(--text);
     line-height: 1.15;
@@ -121,28 +109,12 @@ body {
     color: var(--rose);
 }
 
-.header-dots {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 14px;
-}
-
-.header-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.header-rule {
+    width: 32px;
+    height: 1px;
     background: var(--rose);
-    opacity: 0.25;
-}
-
-.header-dot:nth-child(2) {
-    opacity: 0.55;
-    transform: scale(1.15);
-}
-
-.header-dot:nth-child(3) {
-    opacity: 0.25;
+    opacity: 0.3;
+    margin: 14px auto 0;
 }
 
 /* ===== SECTIONS ===== */
@@ -159,33 +131,32 @@ body {
     padding: 0 4px;
 }
 
-.section-icon {
-    font-size: 1rem;
-}
-
 .section-label {
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: var(--text-soft);
+}
+
+.section-icon-svg {
+    color: var(--text-soft);
+    flex-shrink: 0;
 }
 
 .card {
     background: var(--surface);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
 /* ===== CARDAPIO ===== */
 .cardapio-card {
     margin: 0 16px 8px;
-    background: linear-gradient(135deg, var(--surface) 0%, #fff5f5 100%);
-    border: 1px solid rgba(199, 91, 100, 0.1);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+    background: var(--bg);
+    border: 1px dashed rgba(199, 91, 100, 0.25);
+    border-radius: 4px;
     padding: 30px 24px 26px;
     text-align: center;
 }
@@ -200,9 +171,9 @@ body {
 
 .cardapio-eyebrow {
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: var(--text-soft);
     margin-bottom: 20px;
 }
@@ -215,7 +186,8 @@ body {
     font-family: var(--font-serif);
     font-style: italic;
     font-weight: 600;
-    font-size: 1.3rem;
+    font-size: clamp(1.3rem, 4vw, 1.6rem);
+    letter-spacing: -0.01em;
     color: var(--rose-dark);
     margin-bottom: 4px;
 }
@@ -263,20 +235,20 @@ body {
 /* ===== MESSAGE ===== */
 .mensagem-card {
     margin: 0 16px 8px;
-    background: linear-gradient(135deg, var(--surface) 0%, #fff5f5 100%);
+    background: var(--surface);
     border-radius: var(--radius-lg);
-    border: 1px solid rgba(199, 91, 100, 0.1);
+    border: 1px solid var(--border);
     padding: 20px 22px;
-    box-shadow: var(--shadow-sm);
 }
 
 .mensagem-text {
     font-family: var(--font-serif);
-    font-size: 1.02rem;
+    font-size: clamp(1.02rem, 3.5vw, 1.15rem);
     line-height: 1.72;
     color: #3a2e2e;
     text-align: center;
     font-style: italic;
+    letter-spacing: -0.01em;
 }
 
 /* ===== GALLERY ===== */
@@ -284,7 +256,6 @@ body {
     margin: 0 16px 8px;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: var(--shadow-md);
     border: 1px solid var(--border);
     background: #faf5ef;
 }
@@ -402,7 +373,6 @@ body {
     border-radius: var(--radius-lg);
     overflow: hidden;
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
     height: 420px;
 }
 
@@ -423,7 +393,6 @@ body {
     border-radius: var(--radius-lg);
     height: auto;
     object-fit: cover;
-    box-shadow: var(--shadow-md);
     display: block;
 }
 
@@ -458,7 +427,7 @@ body {
     width: 140px;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    transition: transform var(--transition-spring), box-shadow var(--transition);
+    transition: transform var(--transition), box-shadow var(--transition);
     display: block;
 }
 
@@ -470,17 +439,16 @@ body {
 .ratinho-msg {
     opacity: 0;
     transform: translateY(6px);
-    transition: opacity 0.25s ease, transform 0.25s ease;
+    transition: opacity var(--transition), transform var(--transition);
     background: var(--surface);
     border: 1px solid rgba(199, 91, 100, 0.15);
-    border-radius: var(--radius-md);
+    border-radius: 2px;
     padding: 14px 18px;
     font-family: var(--font-serif);
     font-size: 1rem;
     color: var(--text);
     text-align: center;
     line-height: 1.5;
-    box-shadow: var(--shadow-sm);
     width: 100%;
     pointer-events: none;
 }
@@ -489,10 +457,6 @@ body {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
-}
-
-.ratinho-btn img {
-    transition: transform 0.2s ease, box-shadow var(--transition);
 }
 
 .ratinho-btn img.rato-grow {
@@ -692,7 +656,7 @@ body {
 .girassol-final {
     position: relative;
     display: inline-block;
-    font-size: 3.4rem;
+    font-size: clamp(3.4rem, 10vw, 4.5rem);
     animation: girassolBreathe 3.2s ease-in-out infinite;
     transform-origin: 50% 85%;
 }
@@ -757,9 +721,8 @@ body {
     flex-direction: column;
     gap: 2px;
     background: var(--surface);
-    border-radius: var(--radius-lg);
+    border-radius: 2px;
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
@@ -866,7 +829,6 @@ body {
     font-weight: 600;
     color: var(--rose);
     cursor: pointer;
-    box-shadow: var(--shadow-sm);
     transition: background var(--transition), transform var(--transition);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -882,7 +844,6 @@ body {
     background: var(--surface);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
     padding: 20px 18px;
     margin-top: 12px;
 }
@@ -928,7 +889,7 @@ body {
     color: var(--text);
     outline: none;
     -webkit-tap-highlight-color: transparent;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
     appearance: none;
     -webkit-appearance: none;
 }
@@ -1053,7 +1014,7 @@ textarea.form-input {
 
 .sheet-title {
     font-family: var(--font-serif);
-    font-size: 1.15rem;
+    font-size: clamp(1.15rem, 4vw, 1.35rem);
     font-weight: 600;
     color: var(--text);
     flex: 1;
@@ -1429,7 +1390,6 @@ textarea.form-input {
     z-index: 999;
     color: var(--rose);
     transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
-    outline: none;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -1484,6 +1444,33 @@ textarea.form-input {
         animation: none !important;
         transition-duration: 0.01ms !important;
     }
+
+    .scroll-reveal {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+/* ===== FOCUS ===== */
+:focus-visible {
+    outline: 2px solid var(--rose);
+    outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ===== SCROLL REVEAL ===== */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.32s ease, transform 0.32s ease;
+}
+
+.scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .countdown {
@@ -1520,7 +1507,7 @@ textarea.form-input {
 .countdown-num {
     font-family: var(--font-body);
     font-variant-numeric: tabular-nums;
-    font-size: 2.1rem;
+    font-size: clamp(2.1rem, 7vw, 3.2rem);
     font-weight: 300;
     letter-spacing: -0.02em;
     color: var(--text);

@@ -664,7 +664,7 @@ function updateCountdown() {
         return;
     }
     digits.style.display = '';
-    eyebrow.textContent = 'Contando os segundos(literalmente agora) pra te ver s2';
+    eyebrow.textContent = 'Contando os segundos(literalmente) pra te ver';
     const diff = getNextSaturday() - now;
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
@@ -678,6 +678,20 @@ function updateCountdown() {
 
 updateCountdown();
 setInterval(updateCountdown, 1000);
+
+// ===== SCROLL REVEAL =====
+if ('IntersectionObserver' in window) {
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+
+    qsa('.scroll-reveal').forEach(el => revealObserver.observe(el));
+}
 
 // ===== INIT =====
 loadReviews();

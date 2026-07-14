@@ -31,13 +31,17 @@
 
         <!-- HEADER -->
         <div class="header">
-            <div class="header-emoji">⏳</div>
-            <h1>Nossas Noites <span class="accent">Temáticas</span></h1>
-            <div class="header-dots">
-                <div class="header-dot"></div>
-                <div class="header-dot"></div>
-                <div class="header-dot"></div>
+            <div class="header-icon">
+                <svg viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="36">
+                    <path d="M4,4 L20,4" />
+                    <path d="M4,28 L20,28" />
+                    <path d="M5,4 Q8,10 12,16 Q8,22 5,28" />
+                    <path d="M19,4 Q16,10 12,16 Q16,22 19,28" />
+                    <path d="M11,10 L12,14" opacity="0.4" stroke-width="1.2" />
+                </svg>
             </div>
+            <h1>Nossas Noites <span class="accent">Temáticas</span></h1>
+            <div class="header-rule"></div>
         </div>
 
         <!-- PRÓXIMO PAÍS CARD -->
@@ -50,12 +54,7 @@
         </div>
 
         <!-- GALLERY -->
-        <div class="section">
-            <div class="section-header">
-                <span class="section-label">Nossas fotos</span>
-            </div>
-        </div>
-        <div class="galeria-card">
+        <div class="galeria-card scroll-reveal">
             <div class="galeria-container">
                 <div class="galeria-wrapper" id="galeriaWrapper">
                     <div class="galeria-item"><img src="assets/images/1.jpeg" alt="Foto 1" decoding="async">
@@ -81,11 +80,18 @@
         <!-- SPOTIFY -->
         <div class="section" style="margin-top:8px;">
             <div class="section-header">
-                <span class="section-icon">🎶</span>
+                <svg class="section-icon-svg" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="14">
+                    <path d="M8,3 L8,17" />
+                    <ellipse cx="6" cy="17" rx="3" ry="2.2" transform="rotate(-15, 6, 17)" />
+                    <path d="M18,5 L18,19" />
+                    <ellipse cx="16" cy="19" rx="3" ry="2.2" transform="rotate(-15, 16, 19)" />
+                    <path d="M8,3 L18,5" />
+                    <path d="M8,6 L18,8" opacity="0.5" />
+                </svg>
                 <span class="section-label">Nossas playlists</span>
             </div>
         </div>
-        <div class="spotify-card">
+        <div class="spotify-card scroll-reveal">
             <iframe title="Nossa playlist no Spotify"
                 src="https://open.spotify.com/embed/playlist/7uaHKseMBYjDd2mOl3aSnO?utm_source=generator&si=c3b66a50512a4aeb"
                 width="100%" frameBorder="0" allowfullscreen="" loading="lazy"
@@ -100,7 +106,7 @@
         </div>
 
         <!-- PHOTO CALLOUT -->
-        <div class="photo-section">
+        <div class="photo-section scroll-reveal">
             <img src="assets/images/4.jpeg" alt="Foto especial" loading="lazy" decoding="async" class="photo-img">
             <p class="photo-caption">Não preciso ir em museu nenhum mais, já achei minha obra de arte favorita</p>
         </div>
@@ -115,7 +121,7 @@
         </div>
 
         <!-- LETTERBOXD -->
-        <div class="letterboxd-section">
+        <div class="letterboxd-section scroll-reveal">
             <div class="letterboxd-header">
                 <div class="letterboxd-title-group">
                     <span class="section-label">Nosso Letterboxd</span>
@@ -193,7 +199,7 @@
         </div>
 
         <div class="countdown">
-            <span class="countdown-eyebrow">Contando os segundos(literalmente agora) pra te ver s2</span>
+            <span class="countdown-eyebrow">Contando os segundos(literalmente) pra te ver</span>
             <div class="countdown-digits" id="countdownDigits">
                 <div class="countdown-unit">
                     <span class="countdown-num" id="cdDays">00</span>
