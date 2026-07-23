@@ -667,6 +667,8 @@ document.addEventListener('keydown', e => {
         closeReviewSheet();
     } else if (calendarModal.classList.contains('open')) {
         setModalOpen(calendarModal, false);
+    } else if ($('meetupModal').classList.contains('open')) {
+        closeMeetupModal();
     }
 });
 
@@ -675,7 +677,9 @@ $('refreshBtn').addEventListener('click', () => {
 });
 
 // ===== COUNTDOWN =====
-function getNextSaturday() {
+const MEETUP_STORAGE_KEY = 'meetupDate';
+
+function getNextSaturdayDefault() {
     const now = new Date();
     const result = new Date(now);
     const day = now.getDay();
@@ -685,19 +689,34 @@ function getNextSaturday() {
     return result;
 }
 
+function getMeetupDate() {
+    const saved = localStorage.getItem(MEETUP_STORAGE_KEY);
+    if (saved) {
+        const d = new Date(saved);
+        if (!isNaN(d.getTime())) return d;
+    }
+    const fallback = getNextSaturdayDefault();
+    localStorage.setItem(MEETUP_STORAGE_KEY, fallback.toISOString());
+    return fallback;
+}
+
 function updateCountdown() {
+    const target = getMeetupDate();
     const now = new Date();
-    const day = now.getDay();
+    const diff = target - now;
     const digits = $('countdownDigits');
     const eyebrow = document.querySelector('.countdown-eyebrow');
-    if (day === 0 || day === 6) {
-        digits.style.display = 'none';
+
+    if (diff <= 0) {
+        $('cdDays').textContent = '00';
+        $('cdHours').textContent = '00';
+        $('cdMinutes').textContent = '00';
+        $('cdSeconds').textContent = '00';
         eyebrow.textContent = 'Fim de semana';
         return;
     }
-    digits.style.display = '';
+
     eyebrow.textContent = 'Contando os segundos(literalmente) pra te ver';
-    const diff = getNextSaturday() - now;
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);
@@ -707,6 +726,58 @@ function updateCountdown() {
     $('cdMinutes').textContent = String(minutes).padStart(2, '0');
     $('cdSeconds').textContent = String(seconds).padStart(2, '0');
 }
+
+function openMeetupModal() {
+    const current = getMeetupDate();
+    const dateStr = current.getFullYear() + '-' +
+        String(current.getMonth() + 1).padStart(2, '0') + '-' +
+        String(current.getDate()).padStart(2, '0');
+    const timeStr = String(current.getHours()).padStart(2, '0') + ':' +
+        String(current.getMinutes()).padStart(2, '0');
+    $('meetupDateInput').value = dateStr;
+    $('meetupTimeInput').value = timeStr;
+    setModalOpen($('meetupModal'), true);
+}
+
+function closeMeetupModal() {
+    setModalOpen($('meetupModal'), false);
+}
+
+$('meetupSaveBtn').addEventListener('click', () => {
+    const dateVal = $('meetupDateInput').value;
+    const timeVal = $('meetupTimeInput').value;
+    if (!dateVal || !timeVal) {
+        alert('Preencha a data e a hora.');
+        return;
+    }
+    const combined = new Date(dateVal + 'T' + timeVal + ':00');
+    if (isNaN(combined.getTime())) {
+        alert('Data ou hora inválida.');
+        return;
+    }
+    localStorage.setItem(MEETUP_STORAGE_KEY, combined.toISOString());
+    closeMeetupModal();
+    updateCountdown();
+});
+
+$('meetupCancelBtn').addEventListener('click', closeMeetupModal);
+$('closeMeetupModal').addEventListener('click', closeMeetupModal);
+$('meetupModal').addEventListener('click', e => { if (e.target === $('meetupModal')) closeMeetupModal(); });
+
+let meetupClickCount = 0;
+let meetupClickTimer = null;
+
+$('countdownDigits').addEventListener('click', () => {
+    meetupClickCount++;
+    if (meetupClickCount === 1) {
+        meetupClickTimer = setTimeout(() => { meetupClickCount = 0; }, 2000);
+    }
+    if (meetupClickCount >= 4) {
+        clearTimeout(meetupClickTimer);
+        meetupClickCount = 0;
+        openMeetupModal();
+    }
+});
 
 updateCountdown();
 setInterval(updateCountdown, 1000);

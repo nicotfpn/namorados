@@ -260,6 +260,30 @@
         </div>
     </div>
 
+    <!-- MEETUP DATE MODAL -->
+    <div id="meetupModal" class="calendar-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="calendar-card">
+            <div class="calendar-top">
+                <span class="calendar-card-title">Definir data do encontro</span>
+                <button type="button" class="cal-close" id="closeMeetupModal" aria-label="Fechar">×</button>
+            </div>
+            <div class="meetup-fields">
+                <div class="form-group">
+                    <label class="form-label" for="meetupDateInput">Data</label>
+                    <input class="form-input" type="date" id="meetupDateInput">
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label class="form-label" for="meetupTimeInput">Hora</label>
+                    <input class="form-input" type="time" id="meetupTimeInput">
+                </div>
+            </div>
+            <div class="meetup-actions" style="margin-top:18px; display:flex; gap:10px;">
+                <button type="button" class="submit-btn" id="meetupSaveBtn" style="flex:1; margin:0;">Salvar</button>
+                <button type="button" class="cal-close" id="meetupCancelBtn" style="width:auto; height:auto; padding:8px 18px; border-radius:var(--radius-sm); font-size:0.85rem;" aria-label="Cancelar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- LIGHTBOX -->
     <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
         <img src="" alt="" id="lightboxImg">
