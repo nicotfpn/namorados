@@ -329,6 +329,15 @@ async function deleteReview(id) {
     editingId = null;
 }
 
+async function deleteMomento(id) {
+    if (!confirm('Tem certeza que quer excluir esse momento?')) return;
+    closeMomentoActions();
+    momentos = momentos.filter(m => m.id !== id);
+    await momentosStorage.deleteMomento(id);
+    renderMomentos();
+    editingMomentoId = null;
+}
+
 // ===== RATING DISPLAY =====
 const updateRatingDisplay = () => {
     const nEl = $('ratingNico');
@@ -723,6 +732,35 @@ const momentosStorage = {
             try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
         }
         return false;
+    },
+    async deleteMomento(id) {
+        if (isElectron) {
+            try {
+                const result = await window.electronAPI.deleteMomento(id);
+                if (Array.isArray(result)) momentosCache = result;
+                return true;
+            } catch { }
+        }
+        try {
+            const resp = await fetch('/api/momentos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(APP_SECRET ? { 'X-App-Secret': APP_SECRET } : {}) },
+                body: JSON.stringify({ op: 'delete', id })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data.momentos)) {
+                    momentosCache = data.momentos;
+                    try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
+                }
+                return true;
+            }
+        } catch { }
+        if (momentosCache) {
+            momentosCache = momentosCache.filter(m => m.id !== id);
+            try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
+        }
+        return false;
     }
 };
 
@@ -786,6 +824,7 @@ function openTimeline() {
 }
 
 function closeTimeline() {
+    closeMomentoActions();
     setModalOpen(timelineModal, false);
     const form = $('momentoForm');
     const addBtn = $('addMomentoBtn');
@@ -856,37 +895,80 @@ if (timelineModal) {
 }
 setupMomentoForm();
 
-let dotClickCount = 0;
-let dotClickTimer = null;
+let dotState = { id: null, count: 0, timer: null };
 const timelineList = $('timelineList');
+
+function closeMomentoActions() {
+    const existing = document.querySelector('.momento-actions');
+    if (existing) existing.remove();
+}
+
+function showMomentoActions(item, momento) {
+    closeMomentoActions();
+    const actions = document.createElement('div');
+    actions.className = 'momento-actions';
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'momento-action-btn momento-action-edit';
+    editBtn.textContent = 'Editar';
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'momento-action-btn momento-action-delete';
+    deleteBtn.textContent = 'Excluir';
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+    const content = item.querySelector('.timeline-content');
+    content.after(actions);
+
+    editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMomentoActions();
+        editingMomentoId = momento.id;
+        $('momentoData').value = momento.data;
+        $('momentoMensagem').value = momento.mensagem;
+        $('momentoSaveBtn').textContent = 'Salvar alterações';
+        const form = $('momentoForm');
+        const addBtn = $('addMomentoBtn');
+        form.style.display = 'block';
+        addBtn.style.display = 'none';
+        $('momentoMensagem').focus();
+    });
+
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteMomento(momento.id);
+    });
+}
 
 if (timelineList) {
     timelineList.addEventListener('click', (e) => {
+        if (!e.target.closest('.momento-actions')) {
+            closeMomentoActions();
+        }
+
         const dot = e.target.closest('.timeline-dot');
         if (!dot) return;
         const momentoId = dot.dataset.id;
         if (!momentoId) return;
 
-        dotClickCount++;
-        if (dotClickCount === 1) {
-            dotClickTimer = setTimeout(() => { dotClickCount = 0; }, 2000);
+        if (dotState.id !== momentoId) {
+            dotState.id = momentoId;
+            dotState.count = 1;
+            clearTimeout(dotState.timer);
+            dotState.timer = setTimeout(() => { dotState = { id: null, count: 0, timer: null }; }, 2000);
+        } else {
+            dotState.count++;
         }
-        if (dotClickCount >= 3) {
-            clearTimeout(dotClickTimer);
-            dotClickCount = 0;
+
+        if (dotState.count >= 3) {
+            clearTimeout(dotState.timer);
+            dotState = { id: null, count: 0, timer: null };
 
             const momento = momentos.find(m => m.id === momentoId);
             if (!momento) return;
 
-            const addBtn = $('addMomentoBtn');
-            const form = $('momentoForm');
-            editingMomentoId = momento.id;
-            $('momentoData').value = momento.data;
-            $('momentoMensagem').value = momento.mensagem;
-            $('momentoSaveBtn').textContent = 'Salvar alterações';
-            form.style.display = 'block';
-            addBtn.style.display = 'none';
-            $('momentoMensagem').focus();
+            const item = dot.closest('.timeline-item');
+            if (item) showMomentoActions(item, momento);
         }
     });
 }

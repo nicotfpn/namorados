@@ -1594,6 +1594,42 @@ textarea.form-input {
     border-radius: var(--radius-md);
 }
 
+.momento-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-left: 24px;
+}
+
+.momento-action-btn {
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-muted);
+    transition: background var(--transition), transform var(--transition);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.momento-action-btn:active {
+    transform: scale(0.96);
+}
+
+.momento-action-edit {
+    background: var(--bg2);
+    color: var(--text-muted);
+}
+
+.momento-action-delete {
+    background: var(--bg2);
+    color: #8a4a4a;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     *,
