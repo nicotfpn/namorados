@@ -1,13 +1,13 @@
 // CACHE_NAME: incrementar manualmente a cada deploy que muda HTML/CSS/JS.
 // Ex: 'noites-tematicas-v1' -> 'noites-tematicas-v2' -> v3, etc.
-const CACHE_NAME = 'noites-tematicas-v2';
+const CACHE_NAME = 'noites-tematicas-v3';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/css/style.css',
-  '/js/main.js',
+  '/dist/style.min.css',
+  '/dist/main.min.js',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png'
 ];
