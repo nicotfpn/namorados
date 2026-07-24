@@ -1494,7 +1494,7 @@ textarea.form-input {
 .timeline-list::before {
     content: '';
     position: absolute;
-    left: 7px;
+    left: 11px;
     top: 0;
     bottom: 0;
     width: 2px;
@@ -1513,15 +1513,34 @@ textarea.form-input {
 
 .timeline-dot {
     position: absolute;
-    left: -24px;
-    top: 4px;
+    left: -28px;
+    top: 0px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    z-index: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--transition);
+}
+
+.timeline-dot::after {
+    content: '';
     width: 16px;
     height: 16px;
     border-radius: 50%;
     background: var(--surface);
     border: 2.5px solid var(--rose);
     box-shadow: 0 0 0 4px rgba(199, 91, 100, 0.12);
-    z-index: 1;
+    transition: transform var(--transition), border-color var(--transition);
+}
+
+.timeline-dot:active::after {
+    transform: scale(1.25);
+    border-color: var(--rose-dark);
 }
 
 .timeline-date {

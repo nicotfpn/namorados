@@ -727,6 +727,7 @@ const momentosStorage = {
 };
 
 let momentos = [];
+let editingMomentoId = null;
 
 const SEED_MOMENTO = { id: 'seed-2024-06-29', data: '2024-06-29', mensagem: 'Primeiro filme juntos: Harry Potter, no shopping de Gravataí.' };
 
@@ -766,7 +767,7 @@ function renderMomentos() {
         const item = document.createElement('div');
         item.className = 'timeline-item';
         item.innerHTML = `
-            <div class="timeline-dot"></div>
+            <div class="timeline-dot" data-id="${escapeHtml(m.id)}"></div>
             <div class="timeline-content">
                 <span class="timeline-date">${formatMomentoDate(m.data)}</span>
                 <p class="timeline-msg">${escapeHtml(m.mensagem)}</p>
@@ -790,6 +791,8 @@ function closeTimeline() {
     const addBtn = $('addMomentoBtn');
     if (form) form.style.display = 'none';
     if (addBtn) addBtn.style.display = '';
+    editingMomentoId = null;
+    $('momentoSaveBtn').textContent = 'Salvar';
 }
 
 function setupMomentoForm() {
@@ -799,6 +802,8 @@ function setupMomentoForm() {
     if (!addBtn || !form || !cancelBtn) return;
 
     addBtn.addEventListener('click', () => {
+        editingMomentoId = null;
+        $('momentoSaveBtn').textContent = 'Salvar';
         form.style.display = 'block';
         addBtn.style.display = 'none';
         $('momentoData').value = new Date().toISOString().slice(0, 10);
@@ -809,6 +814,8 @@ function setupMomentoForm() {
     cancelBtn.addEventListener('click', () => {
         form.style.display = 'none';
         addBtn.style.display = '';
+        editingMomentoId = null;
+        $('momentoSaveBtn').textContent = 'Salvar';
     });
 
     form.addEventListener('submit', async (e) => {
@@ -820,13 +827,21 @@ function setupMomentoForm() {
             alert('Preencha a data e a mensagem.');
             return;
         }
-        const payload = { id: generateId(), data, mensagem };
-        momentos.push(payload);
+        const id = editingMomentoId || generateId();
+        const payload = { id, data, mensagem };
+        const idx = momentos.findIndex(m => m.id === id);
+        if (idx >= 0) {
+            momentos[idx] = payload;
+        } else {
+            momentos.push(payload);
+        }
         momentos.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
         await momentosStorage.saveMomento(payload);
         renderMomentos();
         form.style.display = 'none';
         addBtn.style.display = '';
+        editingMomentoId = null;
+        $('momentoSaveBtn').textContent = 'Salvar';
     });
 }
 
@@ -840,6 +855,41 @@ if (timelineModal) {
     timelineModal.addEventListener('click', e => { if (e.target === timelineModal) closeTimeline(); });
 }
 setupMomentoForm();
+
+let dotClickCount = 0;
+let dotClickTimer = null;
+const timelineList = $('timelineList');
+
+if (timelineList) {
+    timelineList.addEventListener('click', (e) => {
+        const dot = e.target.closest('.timeline-dot');
+        if (!dot) return;
+        const momentoId = dot.dataset.id;
+        if (!momentoId) return;
+
+        dotClickCount++;
+        if (dotClickCount === 1) {
+            dotClickTimer = setTimeout(() => { dotClickCount = 0; }, 2000);
+        }
+        if (dotClickCount >= 3) {
+            clearTimeout(dotClickTimer);
+            dotClickCount = 0;
+
+            const momento = momentos.find(m => m.id === momentoId);
+            if (!momento) return;
+
+            const addBtn = $('addMomentoBtn');
+            const form = $('momentoForm');
+            editingMomentoId = momento.id;
+            $('momentoData').value = momento.data;
+            $('momentoMensagem').value = momento.mensagem;
+            $('momentoSaveBtn').textContent = 'Salvar alterações';
+            form.style.display = 'block';
+            addBtn.style.display = 'none';
+            $('momentoMensagem').focus();
+        }
+    });
+}
 
 const MEETUP_STORAGE_KEY = 'meetupDate';
 
