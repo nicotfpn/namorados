@@ -109,6 +109,16 @@
             <p class="photo-caption">Não preciso ir em museu nenhum mais, já achei minha obra de arte favorita</p>
         </div>
 
+        <!-- NOSSA HISTÓRIA -->
+        <div class="section" style="margin-top:8px;">
+            <button class="section-header timeline-trigger" id="timelineBtn" type="button">
+                <svg class="section-icon-svg" viewBox="0 0 28 26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="16" height="14">
+                    <path d="M14,24 C14,24 3,16 3,9 C3,5 6,2 9,3 C12,4 14,7 14,9 C14,7 16,4 19,3 C22,2 25,5 25,9 C25,16 14,24 14,24 Z" />
+                </svg>
+                <span class="section-label">Nossa história</span>
+            </button>
+        </div>
+
         <!-- RATINHO -->
         <div class="ratinho-section">
             <button class="ratinho-btn" id="ratinhoBtn" aria-label="Clique para ver o que eu amo em você">
@@ -282,6 +292,37 @@
             <div class="meetup-actions" style="margin-top:18px; display:flex; gap:10px;">
                 <button type="button" class="submit-btn" id="meetupSaveBtn" style="flex:1; margin:0;">Salvar</button>
                 <button type="button" class="cal-close" id="meetupCancelBtn" style="width:auto; height:auto; padding:8px 18px; border-radius:var(--radius-sm); font-size:0.85rem;" aria-label="Cancelar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIMELINE MODAL -->
+    <div id="timelineModal" class="modal-overlay timeline-overlay" role="dialog" aria-modal="true" aria-hidden="true"
+        aria-label="Nossa história">
+        <div class="timeline-sheet">
+            <div class="sheet-inner" style="padding-top:16px;">
+                <div class="sheet-header">
+                    <div>
+                        <div class="sheet-title">Nossa história</div>
+                    </div>
+                    <button type="button" class="sheet-close" id="closeTimelineModal" aria-label="Fechar">×</button>
+                </div>
+                <div id="timelineList" class="timeline-list"></div>
+                <button type="button" id="addMomentoBtn" class="add-momento-btn">+ adicionar momento</button>
+                <form id="momentoForm" class="momento-form" style="display:none;">
+                    <div class="form-group">
+                        <label class="form-label" for="momentoData">Data</label>
+                        <input class="form-input" type="date" id="momentoData" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="momentoMensagem">Mensagem</label>
+                        <textarea class="form-input" id="momentoMensagem" placeholder="Escreva sobre esse momento..." rows="3"></textarea>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="submit-btn" id="momentoSaveBtn" style="flex:1; margin:0;">Salvar</button>
+                        <button type="button" class="cal-close" id="momentoCancelBtn" style="width:auto; height:auto; padding:8px 18px; border-radius:var(--radius-sm); font-size:0.85rem;" aria-label="Cancelar">Cancelar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

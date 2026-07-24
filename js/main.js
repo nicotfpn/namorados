@@ -667,6 +667,8 @@ document.addEventListener('keydown', e => {
         closeReviewSheet();
     } else if (calendarModal.classList.contains('open')) {
         setModalOpen(calendarModal, false);
+    } else if (timelineModal && timelineModal.classList.contains('open')) {
+        closeTimeline();
     } else if ($('meetupModal').classList.contains('open')) {
         closeMeetupModal();
     }
@@ -676,7 +678,169 @@ $('refreshBtn').addEventListener('click', () => {
     window.location.reload();
 });
 
-// ===== COUNTDOWN =====
+// ===== MOMENTOS =====
+const momentosStorageKey = 'nossaHistoria';
+let momentosCache = null;
+
+const momentosStorage = {
+    async get() {
+        if (momentosCache && Array.isArray(momentosCache)) return [...momentosCache];
+        try {
+            const resp = await fetch('/api/momentos');
+            if (resp.ok) {
+                momentosCache = await resp.json();
+                if (!Array.isArray(momentosCache)) momentosCache = [];
+                return [...momentosCache];
+            }
+        } catch { }
+        const raw = localStorage.getItem(momentosStorageKey);
+        try {
+            momentosCache = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(momentosCache)) momentosCache = [];
+        } catch { momentosCache = []; }
+        return [...momentosCache];
+    },
+    async saveMomento(momento) {
+        if (!momento || !momento.id) return;
+        try {
+            const resp = await fetch('/api/momentos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(APP_SECRET ? { 'X-App-Secret': APP_SECRET } : {}) },
+                body: JSON.stringify({ op: 'upsert', momento })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data.momentos)) {
+                    momentosCache = data.momentos;
+                    try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
+                }
+                return true;
+            }
+        } catch { }
+        if (momentosCache) {
+            const idx = momentosCache.findIndex(m => m.id === momento.id);
+            if (idx >= 0) momentosCache[idx] = momento; else momentosCache.push(momento);
+            try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
+        }
+        return false;
+    }
+};
+
+let momentos = [];
+
+const SEED_MOMENTO = { id: 'seed-2024-06-29', data: '2024-06-29', mensagem: 'Primeiro filme juntos: Harry Potter, no shopping de Gravataí.' };
+
+function formatMomentoDate(dateStr) {
+    if (!dateStr) return '';
+    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const [y, m, d] = dateStr.split('-');
+    return `${Number(d)} de ${meses[Number(m) - 1]}`;
+}
+
+function loadMomentos() {
+    return momentosStorage.get().then(items => {
+        if (!items.length) {
+            momentos = [SEED_MOMENTO];
+            momentosCache = [...momentos];
+        } else {
+            momentos = items;
+        }
+        momentos.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+        renderMomentos();
+    }).catch(() => {
+        momentos = [];
+        renderMomentos();
+    });
+}
+
+function renderMomentos() {
+    const container = $('timelineList');
+    if (!container) return;
+    if (!momentos.length) {
+        container.innerHTML = '<p class="empty-state">Nenhum momento ainda — adicione o primeiro!</p>';
+        return;
+    }
+    const sorted = [...momentos].sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+    const frag = document.createDocumentFragment();
+    sorted.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.innerHTML = `
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <span class="timeline-date">${formatMomentoDate(m.data)}</span>
+                <p class="timeline-msg">${escapeHtml(m.mensagem)}</p>
+            </div>
+        `;
+        frag.appendChild(item);
+    });
+    container.replaceChildren(frag);
+}
+
+const timelineModal = $('timelineModal');
+
+function openTimeline() {
+    renderMomentos();
+    setModalOpen(timelineModal, true);
+}
+
+function closeTimeline() {
+    setModalOpen(timelineModal, false);
+    const form = $('momentoForm');
+    const addBtn = $('addMomentoBtn');
+    if (form) form.style.display = 'none';
+    if (addBtn) addBtn.style.display = '';
+}
+
+function setupMomentoForm() {
+    const addBtn = $('addMomentoBtn');
+    const form = $('momentoForm');
+    const cancelBtn = $('momentoCancelBtn');
+    if (!addBtn || !form || !cancelBtn) return;
+
+    addBtn.addEventListener('click', () => {
+        form.style.display = 'block';
+        addBtn.style.display = 'none';
+        $('momentoData').value = new Date().toISOString().slice(0, 10);
+        $('momentoMensagem').value = '';
+        $('momentoMensagem').focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        form.style.display = 'none';
+        addBtn.style.display = '';
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const data = $('momentoData').value;
+        const mensagem = $('momentoMensagem').value.trim();
+        if (!data || !mensagem) {
+            alert('Preencha a data e a mensagem.');
+            return;
+        }
+        const payload = { id: generateId(), data, mensagem };
+        momentos.push(payload);
+        momentos.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+        await momentosStorage.saveMomento(payload);
+        renderMomentos();
+        form.style.display = 'none';
+        addBtn.style.display = '';
+    });
+}
+
+if ($('timelineBtn')) {
+    $('timelineBtn').addEventListener('click', openTimeline);
+}
+if ($('closeTimelineModal')) {
+    $('closeTimelineModal').addEventListener('click', closeTimeline);
+}
+if (timelineModal) {
+    timelineModal.addEventListener('click', e => { if (e.target === timelineModal) closeTimeline(); });
+}
+setupMomentoForm();
+
 const MEETUP_STORAGE_KEY = 'meetupDate';
 
 function getNextSaturdayDefault() {
@@ -798,6 +962,7 @@ if ('IntersectionObserver' in window) {
 
 // ===== INIT =====
 loadReviews();
+loadMomentos();
 
 if ('serviceWorker' in navigator && !isElectron) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
