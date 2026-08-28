@@ -3,10 +3,6 @@ const $ = (id) => document.getElementById(id);
 const qsa = (sel, scope = document) => [...scope.querySelectorAll(sel)];
 const isActivationKey = (e) => e.key === 'Enter' || e.key === ' ';
 
-// App secret para autenticação nas rotas POST da API.
-// Em ambientes serverless (Vercel etc.), env vars no frontend são públicas por natureza.
-// Para esconder de verdade, use um proxy/API route que injete o secret no server-side.
-// Mesmo assim, a checagem no backend é mantida como barreira básica.
 const APP_SECRET = '';
 
 function generateId() {
@@ -34,7 +30,17 @@ function calcAverageRating(nicoRaw, nickRaw) {
     };
 }
 
+function safeScrollIntoView(el, opts) {
+    if (!el || typeof el.scrollIntoView !== 'function') return;
+    try {
+        el.scrollIntoView(opts);
+    } catch (e) {
+        try { el.scrollIntoView(); } catch (_) {}
+    }
+}
+
 const setModalOpen = (modal, isOpen) => {
+    if (!modal) return;
     modal.classList.toggle('open', isOpen);
     modal.setAttribute('aria-hidden', String(!isOpen));
     document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -60,7 +66,7 @@ const formatDateBR = (dateStr) => {
     return `${d}/${m}/${y}`;
 };
 
-// ===== STORAGE (sincronizado via Upstash Redis / Electron IPC) =====
+// ===== STORAGE =====
 const storageKey = 'letterboxdReviews';
 let reviewsCache = null;
 const isElectron = typeof window !== 'undefined' && typeof window.electronAPI !== 'undefined';
@@ -83,8 +89,8 @@ const storage = {
                 return [...reviewsCache];
             }
         } catch { }
-        const raw = localStorage.getItem(storageKey);
         try {
+            const raw = localStorage.getItem(storageKey);
             reviewsCache = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(reviewsCache)) reviewsCache = [];
         } catch { reviewsCache = []; }
@@ -237,12 +243,12 @@ const sheetActions = $('sheetActions');
 
 function openReviewSheet(id) {
     const r = reviews.find(rev => rev.id === id);
-    if (!r) return;
+    if (!r || !reviewModal || !sheetTitle) return;
 
     sheetTitle.textContent = r.movie;
-    sheetDate.textContent = `Assistido em ${formatDateBR(r.date)}`;
+    if (sheetDate) sheetDate.textContent = `Assistido em ${formatDateBR(r.date)}`;
 
-    sheetRatings.innerHTML = `
+    if (sheetRatings) sheetRatings.innerHTML = `
         <div class="rating-chip">
             <span class="rating-chip-label">Nico</span>
             <span class="rating-chip-stars">${ratingStars(r.ratingNico)}</span>
@@ -259,7 +265,7 @@ function openReviewSheet(id) {
         </div>
     `;
 
-    sheetBubbles.innerHTML = `
+    if (sheetBubbles) sheetBubbles.innerHTML = `
         <div class="bubble nico">
             <div class="bubble-author">Nico</div>
             <div class="bubble-text">${r.commentNico ? escapeHtml(r.commentNico) : 'Sem resenha ainda.'}</div>
@@ -270,55 +276,71 @@ function openReviewSheet(id) {
         </div>
     `;
 
-    sheetActions.innerHTML = '';
-    const editBtn = document.createElement('button');
-    editBtn.className = 'action-btn edit';
-    editBtn.textContent = 'Editar';
-    editBtn.type = 'button';
-    editBtn.addEventListener('click', () => { closeReviewSheet(); openEditReview(id); });
+    if (sheetActions) {
+        sheetActions.innerHTML = '';
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn edit';
+        editBtn.textContent = 'Editar';
+        editBtn.type = 'button';
+        editBtn.addEventListener('click', () => { closeReviewSheet(); openEditReview(id); });
 
-    const delBtn = document.createElement('button');
-    delBtn.className = 'action-btn delete';
-    delBtn.textContent = 'Deletar';
-    delBtn.type = 'button';
-    delBtn.addEventListener('click', () => { closeReviewSheet(); deleteReview(id); });
+        const delBtn = document.createElement('button');
+        delBtn.className = 'action-btn delete';
+        delBtn.textContent = 'Deletar';
+        delBtn.type = 'button';
+        delBtn.addEventListener('click', () => { closeReviewSheet(); deleteReview(id); });
 
-    sheetActions.appendChild(editBtn);
-    sheetActions.appendChild(delBtn);
+        sheetActions.appendChild(editBtn);
+        sheetActions.appendChild(delBtn);
+    }
 
     setModalOpen(reviewModal, true);
 }
 
 function closeReviewSheet() { setModalOpen(reviewModal, false); }
 
-$('closeReviewModal').addEventListener('click', closeReviewSheet);
-reviewModal.addEventListener('click', e => { if (e.target === reviewModal) closeReviewSheet(); });
+try {
+    const closeReviewBtn = $('closeReviewModal');
+    if (closeReviewBtn) closeReviewBtn.addEventListener('click', closeReviewSheet);
+    if (reviewModal) reviewModal.addEventListener('click', e => { if (e.target === reviewModal) closeReviewSheet(); });
 
-// Swipe to dismiss on mobile
-let touchStartY = 0;
-const reviewSheet = $('reviewSheet');
-reviewSheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
-reviewSheet.addEventListener('touchend', e => {
-    const delta = e.changedTouches[0].clientY - touchStartY;
-    if (delta > 80) closeReviewSheet();
-}, { passive: true });
+    let touchStartY = 0;
+    const reviewSheet = $('reviewSheet');
+    if (reviewSheet) {
+        reviewSheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+        reviewSheet.addEventListener('touchend', e => {
+            const delta = e.changedTouches[0].clientY - touchStartY;
+            if (delta > 80) closeReviewSheet();
+        }, { passive: true });
+    }
+} catch (e) {}
 
 // ===== EDIT / DELETE =====
 function openEditReview(id) {
     const r = reviews.find(rev => rev.id === id);
     if (!r) return;
     editingId = id;
-    $('movieName').value = r.movie;
-    $('movieDate').value = r.date;
-    $('ratingNico').value = r.ratingNico !== null ? String(r.ratingNico) : '';
-    $('ratingNick').value = r.ratingNick !== null ? String(r.ratingNick) : '';
-    $('commentNico').value = r.commentNico || '';
-    $('commentNick').value = r.commentNick || '';
+    const movieName = $('movieName');
+    const movieDate = $('movieDate');
+    if (movieName) movieName.value = r.movie;
+    if (movieDate) movieDate.value = r.date;
+    const rNico = $('ratingNico');
+    const rNick = $('ratingNick');
+    if (rNico) rNico.value = r.ratingNico !== null ? String(r.ratingNico) : '';
+    if (rNick) rNick.value = r.ratingNick !== null ? String(r.ratingNick) : '';
+    const cNico = $('commentNico');
+    const cNick = $('commentNick');
+    if (cNico) cNico.value = r.commentNico || '';
+    if (cNick) cNick.value = r.commentNick || '';
     updateRatingDisplay();
-    $('formTitle').textContent = 'Editar filme';
-    $('submitBtn').textContent = 'Salvar alterações';
-    $('movieName').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    $('movieName').focus();
+    const formTitle = $('formTitle');
+    const submitBtn = $('submitBtn');
+    if (formTitle) formTitle.textContent = 'Editar filme';
+    if (submitBtn) submitBtn.textContent = 'Salvar alterações';
+    if (movieName) {
+        safeScrollIntoView(movieName, { behavior: 'smooth', block: 'center' });
+        movieName.focus();
+    }
 }
 
 async function deleteReview(id) {
@@ -343,7 +365,7 @@ const updateRatingDisplay = () => {
     const nEl = $('ratingNico');
     const kEl = $('ratingNick');
     const display = $('ratingDisplay');
-    if (!display) return;
+    if (!display || !nEl || !kEl) return;
     const nv = nEl.value, kv = kEl.value;
     if (!nv && !kv) { display.value = ''; return; }
     const nParsed = nv !== '' ? Number(nv) : null;
@@ -352,340 +374,387 @@ const updateRatingDisplay = () => {
     display.value = avg !== null ? `${avg}/5` : '';
 };
 
-$('ratingNico').addEventListener('change', updateRatingDisplay);
-$('ratingNick').addEventListener('change', updateRatingDisplay);
+try {
+    const rNicoEl = $('ratingNico');
+    const rNickEl = $('ratingNick');
+    if (rNicoEl) rNicoEl.addEventListener('change', updateRatingDisplay);
+    if (rNickEl) rNickEl.addEventListener('change', updateRatingDisplay);
+} catch (e) {}
 
 // ===== FORM SUBMIT =====
-$('reviewForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+try {
+    const reviewForm = $('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-    const movieName = $('movieName').value.trim();
-    const movieDate = $('movieDate').value;
-    const ratingNico = $('ratingNico').value;
-    const ratingNick = $('ratingNick').value;
-    const commentNico = $('commentNico').value.trim();
-    const commentNick = $('commentNick').value.trim();
+            const movieName = $('movieName') ? $('movieName').value.trim() : '';
+            const movieDate = $('movieDate') ? $('movieDate').value : '';
+            const ratingNico = $('ratingNico') ? $('ratingNico').value : '';
+            const ratingNick = $('ratingNick') ? $('ratingNick').value : '';
+            const commentNico = $('commentNico') ? $('commentNico').value.trim() : '';
+            const commentNick = $('commentNick') ? $('commentNick').value.trim() : '';
 
-    if (!movieName || !movieDate) {
-        alert('Preencha pelo menos o nome do filme e a data.');
-        return;
-    }
-
-    if (!ratingNico && !ratingNick && !commentNico && !commentNick) {
-        alert('Preencha a nota ou a resenha de pelo menos um de vocês.');
-        return;
-    }
-
-    const nRaw = ratingNico !== '' ? Number(ratingNico) : null;
-    const kRaw = ratingNick !== '' ? Number(ratingNick) : null;
-    const { nico: calcNico, nick: calcNick, avg } = calcAverageRating(nRaw, kRaw);
-
-    let payload;
-    if (editingId) {
-        payload = {
-            id: editingId,
-            movie: movieName,
-            date: movieDate,
-            ratingNico: calcNico,
-            ratingNick: calcNick,
-            rating: avg,
-            commentNico,
-            commentNick
-        };
-        const idx = reviews.findIndex(r => r.id === editingId);
-        if (idx >= 0) reviews[idx] = payload;
-        editingId = null;
-    } else {
-        payload = {
-            id: generateId(),
-            movie: movieName,
-            date: movieDate,
-            ratingNico: calcNico,
-            ratingNick: calcNick,
-            rating: avg,
-            commentNico,
-            commentNick
-        };
-        reviews.push(payload);
-    }
-
-    await storage.saveReview(payload);
-    renderReviews(reviews);
-    $('reviewForm').reset();
-    updateRatingDisplay();
-    $('formTitle').textContent = 'Adicionar filme';
-    $('submitBtn').textContent = 'Adicionar filme';
-    $('movieName').focus();
-});
-
-// ===== GALLERY (carousel) =====
-const wrapper = $('galeriaWrapper');
-const dotsContainer = $('galeriaDots');
-const totalPhotos = qsa('.galeria-item').length;
-let currentIndex = 0;
-
-const galeriaItems = qsa('.galeria-item');
-for (let i = 0; i < totalPhotos; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'galeria-dot-item' + (i === 0 ? ' active' : '');
-    dotsContainer.appendChild(dot);
-}
-if (galeriaItems[0]) galeriaItems[0].classList.add('active');
-
-function updateCarousel() {
-    if (wrapper) wrapper.style.transform = `translateX(${-currentIndex * 100}%)`;
-    qsa('.galeria-dot-item').forEach((d, i) => d.classList.toggle('active', i === currentIndex));
-    qsa('.galeria-item').forEach((item, i) => item.classList.toggle('active', i === currentIndex));
-}
-
-$('nextBtn').addEventListener('click', () => { currentIndex = (currentIndex + 1) % totalPhotos; updateCarousel(); });
-$('prevBtn').addEventListener('click', () => { currentIndex = (currentIndex - 1 + totalPhotos) % totalPhotos; updateCarousel(); });
-
-let galTouchX = 0;
-const galContainer = document.querySelector('.galeria-container');
-galContainer.addEventListener('touchstart', e => { galTouchX = e.touches[0].clientX; }, { passive: true });
-galContainer.addEventListener('touchend', e => {
-    const diff = galTouchX - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) {
-        currentIndex = diff > 0
-            ? (currentIndex + 1) % totalPhotos
-            : (currentIndex - 1 + totalPhotos) % totalPhotos;
-        updateCarousel();
-    }
-}, { passive: true });
-
-updateCarousel();
-
-qsa('.galeria-item').forEach(item => {
-    const img = item.querySelector('img');
-    if (!img) return;
-    item.addEventListener('click', () => {
-        $('lightboxImg').src = img.src;
-        $('lightboxImg').alt = img.alt;
-        setModalOpen($('lightbox'), true);
-    });
-});
-
-$('lightbox').addEventListener('click', e => {
-    if (e.target === $('lightbox')) {
-        setModalOpen($('lightbox'), false);
-        $('lightboxImg').src = '';
-    }
-});
-
-// ===== RATINHO =====
-const ratinhoMessages = [
-    'Amo teus olhos',
-    'Amo tuas tatuagens',
-    'Amo teu estilo',
-    'Amo tua boca',
-    'Amo teu sorriso',
-    'Amo tua gargalhada',
-    'Amo o quanto tu me faz rir',
-    'Amo cada detalhe teu',
-    'Amo teu cabelo',
-    'Amo teu cheiro',
-    'Amo teu beijo',
-    'Amo teu gosto musical',
-    'Odeio teu time, mas te amo'
-];
-
-const ratoStages = [
-    'assets/images/rato_com_flor.webp',
-    'assets/images/rato1.webp',
-    'assets/images/rato2.webp',
-    'assets/images/rato3.webp',
-    'assets/images/rato4.webp',
-    'assets/images/rato5.webp',
-    'assets/images/rato6.webp'
-];
-let ratoClickCount = 0;
-let ratoExploded = false;
-
-$('ratinhoBtn').addEventListener('click', () => {
-    const msgEl = $('ratinhoMsg');
-    if (ratoExploded) {
-        ratoExploded = false;
-        ratoClickCount = 0;
-        $('ratinhoBtn').innerHTML = '<img src="assets/images/rato_com_flor.webp" alt="Ratinho com flores" loading="lazy" decoding="async">';
-        msgEl.textContent = 'Clique no ratinho para ver o que eu amo em você';
-        msgEl.classList.remove('visible');
-        return;
-    }
-
-    const img = $('ratinhoBtn').querySelector('img');
-
-    if (ratoClickCount < ratoStages.length - 1) {
-        ratoClickCount++;
-        img.src = ratoStages[ratoClickCount];
-        img.classList.add('rato-grow');
-        setTimeout(() => img.classList.remove('rato-grow'), 300);
-        const msg = ratinhoMessages[Math.floor(Math.random() * ratinhoMessages.length)];
-        msgEl.textContent = msg;
-        msgEl.classList.add('visible');
-    } else {
-        ratoExploded = true;
-        img.classList.add('rato-explode');
-
-        if (navigator.vibrate) navigator.vibrate([30, 40, 30, 40, 80]);
-
-        const rect = img.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        const flash = document.createElement('div');
-        flash.className = 'rato-flash';
-        document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 650);
-
-        const particleEmojis = ['🌻', '✨', '💛', '🌻', '✨'];
-        const particleCount = 28;
-        for (let i = 0; i < particleCount; i++) {
-            const p = document.createElement('span');
-            p.className = 'rato-particle';
-            p.textContent = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
-
-            const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.5 - 0.25);
-            const distance = 90 + Math.random() * 160;
-            const tx = Math.cos(angle) * distance;
-            const ty = Math.sin(angle) * distance - 40;
-            const rot = (Math.random() * 360 - 180) + 'deg';
-            const size = (1 + Math.random() * 1.2).toFixed(2) + 'rem';
-            const dur = (0.8 + Math.random() * 0.6).toFixed(2) + 's';
-            const delay = (Math.random() * 0.12).toFixed(2) + 's';
-
-            p.style.setProperty('--px', centerX + 'px');
-            p.style.setProperty('--py', centerY + 'px');
-            p.style.setProperty('--tx', tx + 'px');
-            p.style.setProperty('--ty', ty + 'px');
-            p.style.setProperty('--rot', rot);
-            p.style.setProperty('--psize', size);
-            p.style.setProperty('--pdur', dur);
-            p.style.setProperty('--pdelay', delay);
-
-            document.body.appendChild(p);
-            setTimeout(() => p.remove(), 1800);
-        }
-
-        setTimeout(() => {
-            $('ratinhoBtn').innerHTML = '<span class="girassol-final">🌻</span>';
-
-            const reveal = document.createElement('div');
-            reveal.className = 'rato-reveal';
-            document.body.appendChild(reveal);
-
-            for (let i = 0; i < 14; i++) {
-                const petal = document.createElement('span');
-                petal.className = 'rato-petal';
-                petal.textContent = '🌼';
-                petal.style.setProperty('--petx', Math.random() * 100 + 'vw');
-                petal.style.setProperty('--petsize', (0.9 + Math.random() * 0.8).toFixed(2) + 'rem');
-                petal.style.setProperty('--petdur', (2.8 + Math.random() * 1.4).toFixed(2) + 's');
-                petal.style.setProperty('--petdelay', (Math.random() * 0.8).toFixed(2) + 's');
-                document.body.appendChild(petal);
-                setTimeout(() => petal.remove(), 5000);
+            if (!movieName || !movieDate) {
+                alert('Preencha pelo menos o nome do filme e a data.');
+                return;
             }
 
-            setTimeout(() => reveal.remove(), 2600);
-        }, 500);
+            if (!ratingNico && !ratingNick && !commentNico && !commentNick) {
+                alert('Preencha a nota ou a resenha de pelo menos um de vocês.');
+                return;
+            }
 
-        msgEl.textContent = 'Eu te amo 🌻';
-        msgEl.classList.add('visible');
+            const nRaw = ratingNico !== '' ? Number(ratingNico) : null;
+            const kRaw = ratingNick !== '' ? Number(ratingNick) : null;
+            const { nico: calcNico, nick: calcNick, avg } = calcAverageRating(nRaw, kRaw);
+
+            let payload;
+            if (editingId) {
+                payload = {
+                    id: editingId,
+                    movie: movieName,
+                    date: movieDate,
+                    ratingNico: calcNico,
+                    ratingNick: calcNick,
+                    rating: avg,
+                    commentNico,
+                    commentNick
+                };
+                const idx = reviews.findIndex(r => r.id === editingId);
+                if (idx >= 0) reviews[idx] = payload;
+                editingId = null;
+            } else {
+                payload = {
+                    id: generateId(),
+                    movie: movieName,
+                    date: movieDate,
+                    ratingNico: calcNico,
+                    ratingNick: calcNick,
+                    rating: avg,
+                    commentNico,
+                    commentNick
+                };
+                reviews.push(payload);
+            }
+
+            await storage.saveReview(payload);
+            renderReviews(reviews);
+            reviewForm.reset();
+            updateRatingDisplay();
+            const formTitle = $('formTitle');
+            const submitBtn = $('submitBtn');
+            if (formTitle) formTitle.textContent = 'Adicionar filme';
+            if (submitBtn) submitBtn.textContent = 'Adicionar filme';
+            const mn = $('movieName');
+            if (mn) mn.focus();
+        });
     }
-});
+} catch (e) {}
 
-// ===== CALENDAR =====
-const calendarModal = $('calendarModal');
-const calendarGrid = $('calendarGrid');
-const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-let calDate = new Date();
+// ===== GALLERY (carousel) =====
+try {
+    const wrapper = $('galeriaWrapper');
+    const dotsContainer = $('galeriaDots');
+    const totalPhotos = qsa('.galeria-item').length;
+    let currentIndex = 0;
 
-function buildCalendar(date) {
-    if (!calendarGrid) return;
-    const year = date.getFullYear(), month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    const galeriaItems = qsa('.galeria-item');
+    if (dotsContainer) {
+        for (let i = 0; i < totalPhotos; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'galeria-dot-item' + (i === 0 ? ' active' : '');
+            dotsContainer.appendChild(dot);
+        }
+    }
+    if (galeriaItems[0]) galeriaItems[0].classList.add('active');
 
-    $('currentMonth').textContent = `${monthNames[month]} ${year}`;
+    function updateCarousel() {
+        if (wrapper) wrapper.style.transform = `translateX(${-currentIndex * 100}%)`;
+        qsa('.galeria-dot-item').forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+        qsa('.galeria-item').forEach((item, i) => item.classList.toggle('active', i === currentIndex));
+    }
 
-    const frag = document.createDocumentFragment();
-    weekdays.forEach(d => {
-        const el = document.createElement('div');
-        el.className = 'cal-weekday';
-        el.textContent = d;
-        frag.appendChild(el);
+    const nextBtn = $('nextBtn');
+    const prevBtn = $('prevBtn');
+    if (nextBtn) nextBtn.addEventListener('click', () => { currentIndex = (currentIndex + 1) % totalPhotos; updateCarousel(); });
+    if (prevBtn) prevBtn.addEventListener('click', () => { currentIndex = (currentIndex - 1 + totalPhotos) % totalPhotos; updateCarousel(); });
+
+    let galTouchX = 0;
+    const galContainer = document.querySelector('.galeria-container');
+    if (galContainer) {
+        galContainer.addEventListener('touchstart', e => { galTouchX = e.touches[0].clientX; }, { passive: true });
+        galContainer.addEventListener('touchend', e => {
+            const diff = galTouchX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 40) {
+                currentIndex = diff > 0
+                    ? (currentIndex + 1) % totalPhotos
+                    : (currentIndex - 1 + totalPhotos) % totalPhotos;
+                updateCarousel();
+            }
+        }, { passive: true });
+    }
+
+    updateCarousel();
+
+    qsa('.galeria-item').forEach(item => {
+        const img = item.querySelector('img');
+        if (!img) return;
+        item.addEventListener('click', () => {
+            const lbImg = $('lightboxImg');
+            const lb = $('lightbox');
+            if (lbImg) { lbImg.src = img.src; lbImg.alt = img.alt; }
+            if (lb) setModalOpen(lb, true);
+        });
     });
 
-    const today = new Date();
-    for (let i = 0; i < 42; i++) {
-        const d = new Date(startDate);
-        d.setDate(startDate.getDate() + i);
-        const el = document.createElement('div');
-        el.className = 'cal-day';
-        el.textContent = d.getDate();
+    const lightbox = $('lightbox');
+    if (lightbox) {
+        lightbox.addEventListener('click', e => {
+            if (e.target === lightbox) {
+                setModalOpen(lightbox, false);
+                const lbImg = $('lightboxImg');
+                if (lbImg) lbImg.src = '';
+            }
+        });
+    }
+} catch (e) {}
 
-        if (d.getMonth() !== month) el.classList.add('other-month');
+// ===== RATINHO =====
+try {
+    const ratinhoMessages = [
+        'Amo teus olhos',
+        'Amo tuas tatuagens',
+        'Amo teu estilo',
+        'Amo tua boca',
+        'Amo teu sorriso',
+        'Amo tua gargalhada',
+        'Amo o quanto tu me faz rir',
+        'Amo cada detalhe teu',
+        'Amo teu cabelo',
+        'Amo teu cheiro',
+        'Amo teu beijo',
+        'Amo teu gosto musical',
+        'Odeio teu time, mas te amo'
+    ];
 
-        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const matching = reviews.filter(r => r.date === dateStr);
+    const ratoStages = [
+        'assets/images/rato_com_flor.webp',
+        'assets/images/rato1.webp',
+        'assets/images/rato2.webp',
+        'assets/images/rato3.webp',
+        'assets/images/rato4.webp',
+        'assets/images/rato5.webp',
+        'assets/images/rato6.webp'
+    ];
+    let ratoClickCount = 0;
+    let ratoExploded = false;
 
-        if (matching.length) {
-            el.classList.add('has-movie');
-            el.setAttribute('role', 'button');
-            el.setAttribute('tabindex', '0');
-            el.setAttribute('aria-label', `${matching.length} filme(s) em ${formatDateBR(dateStr)}`);
-            el.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                setModalOpen(calendarModal, false);
-                setTimeout(() => openReviewSheet(matching[0].id), 180);
-            });
+    const ratinhoBtn = $('ratinhoBtn');
+    if (ratinhoBtn) {
+        ratinhoBtn.addEventListener('click', () => {
+            const msgEl = $('ratinhoMsg');
+            if (ratoExploded) {
+                ratoExploded = false;
+                ratoClickCount = 0;
+                ratinhoBtn.innerHTML = '<img src="assets/images/rato_com_flor.webp" alt="Ratinho com flores" loading="lazy" decoding="async">';
+                if (msgEl) { msgEl.textContent = 'Clique no ratinho para ver o que eu amo em você'; msgEl.classList.remove('visible'); }
+                return;
+            }
+
+            const img = ratinhoBtn.querySelector('img');
+
+            if (ratoClickCount < ratoStages.length - 1) {
+                ratoClickCount++;
+                if (img) {
+                    img.src = ratoStages[ratoClickCount];
+                    img.classList.add('rato-grow');
+                    setTimeout(() => img.classList.remove('rato-grow'), 300);
+                }
+                const msg = ratinhoMessages[Math.floor(Math.random() * ratinhoMessages.length)];
+                if (msgEl) { msgEl.textContent = msg; msgEl.classList.add('visible'); }
+            } else {
+                ratoExploded = true;
+                if (img) img.classList.add('rato-explode');
+
+                if (navigator.vibrate) try { navigator.vibrate([30, 40, 30, 40, 80]); } catch (_) {}
+
+                const rect = img ? img.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                const flash = document.createElement('div');
+                flash.className = 'rato-flash';
+                document.body.appendChild(flash);
+                setTimeout(() => flash.remove(), 650);
+
+                const particleEmojis = ['🌻', '✨', '💛', '🌻', '✨'];
+                const particleCount = 28;
+                for (let i = 0; i < particleCount; i++) {
+                    const p = document.createElement('span');
+                    p.className = 'rato-particle';
+                    p.textContent = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
+
+                    const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.5 - 0.25);
+                    const distance = 90 + Math.random() * 160;
+                    const tx = Math.cos(angle) * distance;
+                    const ty = Math.sin(angle) * distance - 40;
+                    const rot = (Math.random() * 360 - 180) + 'deg';
+                    const size = (1 + Math.random() * 1.2).toFixed(2) + 'rem';
+                    const dur = (0.8 + Math.random() * 0.6).toFixed(2) + 's';
+                    const delay = (Math.random() * 0.12).toFixed(2) + 's';
+
+                    p.style.setProperty('--px', centerX + 'px');
+                    p.style.setProperty('--py', centerY + 'px');
+                    p.style.setProperty('--tx', tx + 'px');
+                    p.style.setProperty('--ty', ty + 'px');
+                    p.style.setProperty('--rot', rot);
+                    p.style.setProperty('--psize', size);
+                    p.style.setProperty('--pdur', dur);
+                    p.style.setProperty('--pdelay', delay);
+
+                    document.body.appendChild(p);
+                    setTimeout(() => p.remove(), 1800);
+                }
+
+                setTimeout(() => {
+                    ratinhoBtn.innerHTML = '<span class="girassol-final">🌻</span>';
+
+                    const reveal = document.createElement('div');
+                    reveal.className = 'rato-reveal';
+                    document.body.appendChild(reveal);
+
+                    for (let i = 0; i < 14; i++) {
+                        const petal = document.createElement('span');
+                        petal.className = 'rato-petal';
+                        petal.textContent = '🌼';
+                        petal.style.setProperty('--petx', Math.random() * 100 + 'vw');
+                        petal.style.setProperty('--petsize', (0.9 + Math.random() * 0.8).toFixed(2) + 'rem');
+                        petal.style.setProperty('--petdur', (2.8 + Math.random() * 1.4).toFixed(2) + 's');
+                        petal.style.setProperty('--petdelay', (Math.random() * 0.8).toFixed(2) + 's');
+                        document.body.appendChild(petal);
+                        setTimeout(() => petal.remove(), 5000);
+                    }
+
+                    setTimeout(() => reveal.remove(), 2600);
+                }, 500);
+
+                if (msgEl) { msgEl.textContent = 'Eu te amo 🌻'; msgEl.classList.add('visible'); }
+            }
+        });
+    }
+} catch (e) {}
+
+// ===== CALENDAR =====
+try {
+    const calendarModal = $('calendarModal');
+    const calendarGrid = $('calendarGrid');
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+    let calDate = new Date();
+
+    function buildCalendar(date) {
+        if (!calendarGrid) return;
+        const year = date.getFullYear(), month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+        const cmEl = $('currentMonth');
+        if (cmEl) cmEl.textContent = `${monthNames[month]} ${year}`;
+
+        const frag = document.createDocumentFragment();
+        weekdays.forEach(d => {
+            const el = document.createElement('div');
+            el.className = 'cal-weekday';
+            el.textContent = d;
+            frag.appendChild(el);
+        });
+
+        const today = new Date();
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
+            const el = document.createElement('div');
+            el.className = 'cal-day';
+            el.textContent = d.getDate();
+
+            if (d.getMonth() !== month) el.classList.add('other-month');
+
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const matching = reviews.filter(r => r.date === dateStr);
+
+            if (matching.length) {
+                el.classList.add('has-movie');
+                el.setAttribute('role', 'button');
+                el.setAttribute('tabindex', '0');
+                el.setAttribute('aria-label', `${matching.length} filme(s) em ${formatDateBR(dateStr)}`);
+                el.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    setModalOpen(calendarModal, false);
+                    setTimeout(() => openReviewSheet(matching[0].id), 180);
+                });
+            }
+
+            if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()) {
+                el.classList.add('today');
+            }
+
+            frag.appendChild(el);
         }
 
-        if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()) {
-            el.classList.add('today');
-        }
-
-        frag.appendChild(el);
+        calendarGrid.replaceChildren(frag);
     }
 
-    calendarGrid.replaceChildren(frag);
-}
+    const calBtn = $('calendarBtn');
+    if (calBtn) calBtn.addEventListener('click', e => {
+        e.preventDefault();
+        setModalOpen(calendarModal, true);
+        buildCalendar(calDate);
+    });
 
-$('calendarBtn').addEventListener('click', e => {
-    e.preventDefault();
-    setModalOpen(calendarModal, true);
-    buildCalendar(calDate);
-});
+    const closeCal = $('closeCalendarModal');
+    if (closeCal) closeCal.addEventListener('click', () => setModalOpen(calendarModal, false));
+    if (calendarModal) calendarModal.addEventListener('click', e => { if (e.target === calendarModal) setModalOpen(calendarModal, false); });
 
-$('closeCalendarModal').addEventListener('click', () => setModalOpen(calendarModal, false));
-calendarModal.addEventListener('click', e => { if (e.target === calendarModal) setModalOpen(calendarModal, false); });
+    const prevMonth = $('prevMonth');
+    const nextMonth = $('nextMonth');
+    if (prevMonth) prevMonth.addEventListener('click', () => { calDate.setMonth(calDate.getMonth() - 1); buildCalendar(calDate); });
+    if (nextMonth) nextMonth.addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1); buildCalendar(calDate); });
 
-$('prevMonth').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() - 1); buildCalendar(calDate); });
-$('nextMonth').addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1); buildCalendar(calDate); });
+    // expose buildCalendar for calendar section
+    window._buildCalendar = buildCalendar;
+    window._calDate = calDate;
+    window._calendarModal = calendarModal;
+} catch (e) {}
 
 // ===== ESC KEY =====
 document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
-    if ($('lightbox').classList.contains('open')) {
-        setModalOpen($('lightbox'), false);
-        $('lightboxImg').src = '';
-    } else if (reviewModal.classList.contains('open')) {
-        closeReviewSheet();
-    } else if (calendarModal.classList.contains('open')) {
-        setModalOpen(calendarModal, false);
-    } else if (timelineModal && timelineModal.classList.contains('open')) {
-        closeTimeline();
-    } else if ($('meetupModal').classList.contains('open')) {
-        closeMeetupModal();
-    }
+    try {
+        const lb = $('lightbox');
+        if (lb && lb.classList.contains('open')) {
+            setModalOpen(lb, false);
+            const lbImg = $('lightboxImg');
+            if (lbImg) lbImg.src = '';
+        } else if (reviewModal && reviewModal.classList.contains('open')) {
+            closeReviewSheet();
+        } else if (window._calendarModal && window._calendarModal.classList.contains('open')) {
+            setModalOpen(window._calendarModal, false);
+        } else if (timelineModal && timelineModal.classList.contains('open')) {
+            closeTimeline();
+        } else {
+            const meetup = $('meetupModal');
+            if (meetup && meetup.classList.contains('open')) closeMeetupModal();
+        }
+    } catch (_) {}
 });
 
-$('refreshBtn').addEventListener('click', () => {
-    window.location.reload();
-});
+try {
+    const refreshBtn = $('refreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => { window.location.reload(); });
+} catch (e) {}
 
 // ===== MOMENTOS =====
 const momentosStorageKey = 'nossaHistoria';
@@ -702,8 +771,8 @@ const momentosStorage = {
                 return [...momentosCache];
             }
         } catch { }
-        const raw = localStorage.getItem(momentosStorageKey);
         try {
+            const raw = localStorage.getItem(momentosStorageKey);
             momentosCache = raw ? JSON.parse(raw) : [];
             if (!Array.isArray(momentosCache)) momentosCache = [];
         } catch { momentosCache = []; }
@@ -831,7 +900,8 @@ function closeTimeline() {
     if (form) form.style.display = 'none';
     if (addBtn) addBtn.style.display = '';
     editingMomentoId = null;
-    $('momentoSaveBtn').textContent = 'Salvar';
+    const saveBtn = $('momentoSaveBtn');
+    if (saveBtn) saveBtn.textContent = 'Salvar';
 }
 
 function setupMomentoForm() {
@@ -842,26 +912,31 @@ function setupMomentoForm() {
 
     addBtn.addEventListener('click', () => {
         editingMomentoId = null;
-        $('momentoSaveBtn').textContent = 'Salvar';
+        const saveBtn = $('momentoSaveBtn');
+        if (saveBtn) saveBtn.textContent = 'Salvar';
         form.style.display = 'block';
         addBtn.style.display = 'none';
-        $('momentoData').value = new Date().toISOString().slice(0, 10);
-        $('momentoMensagem').value = '';
-        $('momentoMensagem').focus();
+        const dataInput = $('momentoData');
+        const msgInput = $('momentoMensagem');
+        if (dataInput) dataInput.value = new Date().toISOString().slice(0, 10);
+        if (msgInput) { msgInput.value = ''; msgInput.focus(); }
     });
 
     cancelBtn.addEventListener('click', () => {
         form.style.display = 'none';
         addBtn.style.display = '';
         editingMomentoId = null;
-        $('momentoSaveBtn').textContent = 'Salvar';
+        const saveBtn = $('momentoSaveBtn');
+        if (saveBtn) saveBtn.textContent = 'Salvar';
     });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const data = $('momentoData').value;
-        const mensagem = $('momentoMensagem').value.trim();
+        const dataInput = $('momentoData');
+        const msgInput = $('momentoMensagem');
+        const data = dataInput ? dataInput.value : '';
+        const mensagem = msgInput ? msgInput.value.trim() : '';
         if (!data || !mensagem) {
             alert('Preencha a data e a mensagem.');
             return;
@@ -880,20 +955,19 @@ function setupMomentoForm() {
         form.style.display = 'none';
         addBtn.style.display = '';
         editingMomentoId = null;
-        $('momentoSaveBtn').textContent = 'Salvar';
+        const saveBtn = $('momentoSaveBtn');
+        if (saveBtn) saveBtn.textContent = 'Salvar';
     });
 }
 
-if ($('timelineBtn')) {
-    $('timelineBtn').addEventListener('click', openTimeline);
-}
-if ($('closeTimelineModal')) {
-    $('closeTimelineModal').addEventListener('click', closeTimeline);
-}
-if (timelineModal) {
-    timelineModal.addEventListener('click', e => { if (e.target === timelineModal) closeTimeline(); });
-}
-setupMomentoForm();
+try {
+    const timelineBtn = $('timelineBtn');
+    if (timelineBtn) timelineBtn.addEventListener('click', openTimeline);
+    const closeTimelineBtn = $('closeTimelineModal');
+    if (closeTimelineBtn) closeTimelineBtn.addEventListener('click', closeTimeline);
+    if (timelineModal) timelineModal.addEventListener('click', e => { if (e.target === timelineModal) closeTimeline(); });
+    setupMomentoForm();
+} catch (e) {}
 
 let dotState = { id: null, count: 0, timer: null };
 const timelineList = $('timelineList');
@@ -918,20 +992,23 @@ function showMomentoActions(item, momento) {
     actions.appendChild(editBtn);
     actions.appendChild(deleteBtn);
     const content = item.querySelector('.timeline-content');
-    content.after(actions);
+    if (content) content.after(actions);
 
     editBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         closeMomentoActions();
         editingMomentoId = momento.id;
-        $('momentoData').value = momento.data;
-        $('momentoMensagem').value = momento.mensagem;
-        $('momentoSaveBtn').textContent = 'Salvar alterações';
+        const dataInput = $('momentoData');
+        const msgInput = $('momentoMensagem');
+        const saveBtn = $('momentoSaveBtn');
+        if (dataInput) dataInput.value = momento.data;
+        if (msgInput) msgInput.value = momento.mensagem;
+        if (saveBtn) saveBtn.textContent = 'Salvar alterações';
         const form = $('momentoForm');
         const addBtn = $('addMomentoBtn');
-        form.style.display = 'block';
-        addBtn.style.display = 'none';
-        $('momentoMensagem').focus();
+        if (form) form.style.display = 'block';
+        if (addBtn) addBtn.style.display = 'none';
+        if (msgInput) msgInput.focus();
     });
 
     deleteBtn.addEventListener('click', (e) => {
@@ -973,170 +1050,224 @@ if (timelineList) {
     });
 }
 
-const MEETUP_STORAGE_KEY = 'meetupDate';
+// ===== MEETUP / COUNTDOWN =====
+try {
+    const MEETUP_STORAGE_KEY = 'meetupDate';
 
-function getNextSaturdayDefault() {
-    const now = new Date();
-    const result = new Date(now);
-    const day = now.getDay();
-    const daysUntilSaturday = (6 - day + 7) % 7;
-    result.setDate(now.getDate() + daysUntilSaturday);
-    result.setHours(0, 0, 0, 0);
-    return result;
-}
-
-function getMeetupDate() {
-    const saved = localStorage.getItem(MEETUP_STORAGE_KEY);
-    if (saved) {
-        const d = new Date(saved);
-        if (!isNaN(d.getTime())) return d;
-    }
-    const fallback = getNextSaturdayDefault();
-    localStorage.setItem(MEETUP_STORAGE_KEY, fallback.toISOString());
-    return fallback;
-}
-
-function updateCountdown() {
-    const target = getMeetupDate();
-    const now = new Date();
-    const diff = target - now;
-    const digits = $('countdownDigits');
-    const eyebrow = document.querySelector('.countdown-eyebrow');
-
-    if (diff <= 0) {
-        $('cdDays').textContent = '00';
-        $('cdHours').textContent = '00';
-        $('cdMinutes').textContent = '00';
-        $('cdSeconds').textContent = '00';
-        eyebrow.textContent = 'Fim de semana';
-        return;
+    function getNextSaturdayDefault() {
+        const now = new Date();
+        const result = new Date(now);
+        const day = now.getDay();
+        const daysUntilSaturday = (6 - day + 7) % 7;
+        result.setDate(now.getDate() + daysUntilSaturday);
+        result.setHours(0, 0, 0, 0);
+        return result;
     }
 
-    eyebrow.textContent = 'Contando os segundos(literalmente) pra te ver';
-    const days = Math.floor(diff / 86400000);
-    const hours = Math.floor((diff % 86400000) / 3600000);
-    const minutes = Math.floor((diff % 3600000) / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-    $('cdDays').textContent = String(days).padStart(2, '0');
-    $('cdHours').textContent = String(hours).padStart(2, '0');
-    $('cdMinutes').textContent = String(minutes).padStart(2, '0');
-    $('cdSeconds').textContent = String(seconds).padStart(2, '0');
-}
-
-function openMeetupModal() {
-    const current = getMeetupDate();
-    const dateStr = current.getFullYear() + '-' +
-        String(current.getMonth() + 1).padStart(2, '0') + '-' +
-        String(current.getDate()).padStart(2, '0');
-    const timeStr = String(current.getHours()).padStart(2, '0') + ':' +
-        String(current.getMinutes()).padStart(2, '0');
-    $('meetupDateInput').value = dateStr;
-    $('meetupTimeInput').value = timeStr;
-    setModalOpen($('meetupModal'), true);
-}
-
-function closeMeetupModal() {
-    setModalOpen($('meetupModal'), false);
-}
-
-$('meetupSaveBtn').addEventListener('click', () => {
-    const dateVal = $('meetupDateInput').value;
-    const timeVal = $('meetupTimeInput').value;
-    if (!dateVal || !timeVal) {
-        alert('Preencha a data e a hora.');
-        return;
+    function getMeetupDate() {
+        try {
+            const saved = localStorage.getItem(MEETUP_STORAGE_KEY);
+            if (saved) {
+                const d = new Date(saved);
+                if (!isNaN(d.getTime())) return d;
+            }
+        } catch (_) {}
+        const fallback = getNextSaturdayDefault();
+        try { localStorage.setItem(MEETUP_STORAGE_KEY, fallback.toISOString()); } catch (_) {}
+        return fallback;
     }
-    const combined = new Date(dateVal + 'T' + timeVal + ':00');
-    if (isNaN(combined.getTime())) {
-        alert('Data ou hora inválida.');
-        return;
-    }
-    localStorage.setItem(MEETUP_STORAGE_KEY, combined.toISOString());
-    closeMeetupModal();
-    updateCountdown();
-});
 
-$('meetupCancelBtn').addEventListener('click', closeMeetupModal);
-$('closeMeetupModal').addEventListener('click', closeMeetupModal);
-$('meetupModal').addEventListener('click', e => { if (e.target === $('meetupModal')) closeMeetupModal(); });
+    function updateCountdown() {
+        const target = getMeetupDate();
+        const now = new Date();
+        const diff = target - now;
+        const eyebrow = document.querySelector('.countdown-eyebrow');
 
-let meetupClickCount = 0;
-let meetupClickTimer = null;
-
-$('countdownDigits').addEventListener('click', () => {
-    meetupClickCount++;
-    if (meetupClickCount === 1) {
-        meetupClickTimer = setTimeout(() => { meetupClickCount = 0; }, 2000);
-    }
-    if (meetupClickCount >= 4) {
-        clearTimeout(meetupClickTimer);
-        meetupClickCount = 0;
-        openMeetupModal();
-    }
-});
-
-updateCountdown();
-setInterval(updateCountdown, 1000);
-
-// ===== JAPAN REVEAL =====
-const japanBtn = $('japanRevealBtn');
-const japanCard = document.querySelector('.japan-reveal-card');
-const japanIntro = document.querySelector('.japan-intro');
-
-if (japanBtn && japanIntro) {
-    let japanOpen = false;
-
-    const openJapan = () => {
-        if (japanOpen) return;
-        japanOpen = true;
-
-        japanBtn.classList.add('japan-reveal-btn-open');
-        japanBtn.setAttribute('aria-expanded', 'true');
-
-        if (japanCard) {
-            japanCard.classList.add('revealing');
-            setTimeout(() => japanCard.classList.replace('revealing', 'revealed'), 400);
+        if (diff <= 0) {
+            const d = $('cdDays'); if (d) d.textContent = '00';
+            const h = $('cdHours'); if (h) h.textContent = '00';
+            const m = $('cdMinutes'); if (m) m.textContent = '00';
+            const s = $('cdSeconds'); if (s) s.textContent = '00';
+            if (eyebrow) eyebrow.textContent = 'Fim de semana';
+            return;
         }
 
-        japanIntro.hidden = false;
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                japanIntro.classList.add('entering');
-            });
-        });
+        if (eyebrow) eyebrow.textContent = 'Contando os segundos(literalmente) pra te ver';
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        const d = $('cdDays'); if (d) d.textContent = String(days).padStart(2, '0');
+        const h = $('cdHours'); if (h) h.textContent = String(hours).padStart(2, '0');
+        const m = $('cdMinutes'); if (m) m.textContent = String(minutes).padStart(2, '0');
+        const s = $('cdSeconds'); if (s) s.textContent = String(seconds).padStart(2, '0');
+    }
 
-        setTimeout(() => {
-            japanIntro.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 350);
+    function openMeetupModal() {
+        const current = getMeetupDate();
+        const dateStr = current.getFullYear() + '-' +
+            String(current.getMonth() + 1).padStart(2, '0') + '-' +
+            String(current.getDate()).padStart(2, '0');
+        const timeStr = String(current.getHours()).padStart(2, '0') + ':' +
+            String(current.getMinutes()).padStart(2, '0');
+        const di = $('meetupDateInput');
+        const ti = $('meetupTimeInput');
+        if (di) di.value = dateStr;
+        if (ti) ti.value = timeStr;
+        setModalOpen($('meetupModal'), true);
+    }
+
+    window.closeMeetupModal = function() {
+        setModalOpen($('meetupModal'), false);
     };
+    var closeMeetupModal = window.closeMeetupModal;
 
-    japanBtn.addEventListener('click', openJapan);
-    japanBtn.addEventListener('keydown', e => {
-        if (isActivationKey(e)) {
-            e.preventDefault();
-            openJapan();
+    const meetupSaveBtn = $('meetupSaveBtn');
+    if (meetupSaveBtn) meetupSaveBtn.addEventListener('click', () => {
+        const di = $('meetupDateInput');
+        const ti = $('meetupTimeInput');
+        const dateVal = di ? di.value : '';
+        const timeVal = ti ? ti.value : '';
+        if (!dateVal || !timeVal) {
+            alert('Preencha a data e a hora.');
+            return;
+        }
+        const combined = new Date(dateVal + 'T' + timeVal + ':00');
+        if (isNaN(combined.getTime())) {
+            alert('Data ou hora inválida.');
+            return;
+        }
+        try { localStorage.setItem(MEETUP_STORAGE_KEY, combined.toISOString()); } catch (_) {}
+        closeMeetupModal();
+        updateCountdown();
+    });
+
+    const meetupCancelBtn = $('meetupCancelBtn');
+    if (meetupCancelBtn) meetupCancelBtn.addEventListener('click', closeMeetupModal);
+    const closeMeetupBtn = $('closeMeetupModal');
+    if (closeMeetupBtn) closeMeetupBtn.addEventListener('click', closeMeetupModal);
+    const meetupModal = $('meetupModal');
+    if (meetupModal) meetupModal.addEventListener('click', e => { if (e.target === meetupModal) closeMeetupModal(); });
+
+    let meetupClickCount = 0;
+    let meetupClickTimer = null;
+
+    const cdDigits = $('countdownDigits');
+    if (cdDigits) cdDigits.addEventListener('click', () => {
+        meetupClickCount++;
+        if (meetupClickCount === 1) {
+            meetupClickTimer = setTimeout(() => { meetupClickCount = 0; }, 2000);
+        }
+        if (meetupClickCount >= 4) {
+            clearTimeout(meetupClickTimer);
+            meetupClickCount = 0;
+            openMeetupModal();
         }
     });
-}
 
-// ===== SCROLL REVEAL =====
-if ('IntersectionObserver' in window) {
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('revealed');
-                revealObserver.unobserve(entry.target);
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+} catch (e) {}
+
+// ===== JAPAN REVEAL =====
+try {
+    const japanBtn = $('japanRevealBtn');
+    const japanCard = document.querySelector('.japan-reveal-card');
+    const japanIntro = document.querySelector('.japan-intro');
+
+    if (japanBtn && japanIntro) {
+        let japanOpen = false;
+
+        const openJapan = () => {
+            if (japanOpen) return;
+            japanOpen = true;
+
+            japanBtn.classList.add('japan-reveal-btn-open');
+            japanBtn.setAttribute('aria-expanded', 'true');
+
+            if (japanCard) {
+                japanCard.classList.add('revealing');
+                setTimeout(() => japanCard.classList.replace('revealing', 'revealed'), 400);
+            }
+
+            japanIntro.hidden = false;
+
+            const doEnter = () => { japanIntro.classList.add('entering'); };
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(() => { requestAnimationFrame(doEnter); });
+            } else {
+                setTimeout(doEnter, 50);
+            }
+
+            setTimeout(() => {
+                safeScrollIntoView(japanIntro, { behavior: 'smooth', block: 'nearest' });
+            }, 350);
+        };
+
+        japanBtn.addEventListener('click', openJapan);
+        japanBtn.addEventListener('keydown', e => {
+            if (isActivationKey(e)) {
+                e.preventDefault();
+                openJapan();
             }
         });
-    }, { threshold: 0.15 });
+    }
+} catch (e) {}
 
-    qsa('.scroll-reveal').forEach(el => revealObserver.observe(el));
+// ===== SCROLL REVEAL =====
+try {
+    if ('IntersectionObserver' in window) {
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+
+        qsa('.scroll-reveal').forEach(el => revealObserver.observe(el));
+    } else {
+        qsa('.scroll-reveal').forEach(el => el.classList.add('revealed'));
+    }
+} catch (e) {
+    qsa('.scroll-reveal').forEach(el => el.classList.add('revealed'));
 }
 
 // ===== INIT =====
-loadReviews();
-loadMomentos();
+try { loadReviews(); } catch (e) {}
+try { loadMomentos(); } catch (e) {}
 
+// ===== SERVICE WORKER =====
 if ('serviceWorker' in navigator && !isElectron) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                        const reloaded = sessionStorage.getItem('sw-reload');
+                        if (!reloaded) {
+                            sessionStorage.setItem('sw-reload', '1');
+                            window.location.reload();
+                        }
+                    }
+                });
+            });
+        }).catch(() => {});
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            const reloaded = sessionStorage.getItem('sw-reload');
+            if (!reloaded) {
+                sessionStorage.setItem('sw-reload', '1');
+                window.location.reload();
+            }
+        });
+
+        try { sessionStorage.removeItem('sw-reload'); } catch (_) {}
+    });
 }

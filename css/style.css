@@ -45,6 +45,7 @@
 html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    background-color: #fdf6f0;
 }
 
 button {
@@ -1977,6 +1978,18 @@ button:focus:not(:focus-visible) {
 .scroll-reveal.revealed {
     opacity: 1;
     transform: translateY(0);
+}
+
+@media (scripting: none) {
+    .scroll-reveal {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.scroll-reveal-fallback {
+    opacity: 1 !important;
+    transform: none !important;
 }
 
 .countdown {
