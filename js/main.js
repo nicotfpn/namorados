@@ -1078,6 +1078,47 @@ $('countdownDigits').addEventListener('click', () => {
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
+// ===== JAPAN REVEAL =====
+const japanBtn = $('japanRevealBtn');
+const japanCard = document.querySelector('.japan-reveal-card');
+const japanIntro = document.querySelector('.japan-intro');
+
+if (japanBtn && japanIntro) {
+    let japanOpen = false;
+
+    const openJapan = () => {
+        if (japanOpen) return;
+        japanOpen = true;
+
+        japanBtn.classList.add('japan-reveal-btn-open');
+        japanBtn.setAttribute('aria-expanded', 'true');
+
+        if (japanCard) {
+            japanCard.classList.add('revealing');
+            setTimeout(() => japanCard.classList.replace('revealing', 'revealed'), 400);
+        }
+
+        japanIntro.hidden = false;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                japanIntro.classList.add('entering');
+            });
+        });
+
+        setTimeout(() => {
+            japanIntro.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 350);
+    };
+
+    japanBtn.addEventListener('click', openJapan);
+    japanBtn.addEventListener('keydown', e => {
+        if (isActivationKey(e)) {
+            e.preventDefault();
+            openJapan();
+        }
+    });
+}
+
 // ===== SCROLL REVEAL =====
 if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver((entries) => {

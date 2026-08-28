@@ -235,6 +235,318 @@ body {
     max-width: 56px;
 }
 
+/* ===== JAPAN REVEAL ===== */
+.japan-reveal-card {
+    margin: 0 16px 8px;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 20%, rgba(199, 91, 100, 0.05) 0%, rgba(199, 91, 100, 0) 65%),
+        var(--bg);
+    border: 1px solid rgba(199, 91, 100, 0.18);
+    border-radius: var(--radius-lg);
+    padding: 38px 24px 34px;
+    text-align: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.5, 1), box-shadow 0.4s ease;
+}
+
+.japan-reveal-card.revealing {
+    transform: scale(1.015);
+    box-shadow: var(--shadow-md);
+}
+
+.japan-reveal-card.revealed {
+    transform: scale(1);
+}
+
+.japan-reveal-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-soft);
+    margin-bottom: 20px;
+}
+
+.japan-sun {
+    position: relative;
+    width: 104px;
+    height: 104px;
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.japan-sun svg {
+    position: relative;
+    z-index: 1;
+}
+
+.japan-sun-ring {
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1px solid rgba(199, 91, 100, 0.18);
+    animation: sunPulse 6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes sunPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.12);
+        opacity: 0.9;
+    }
+}
+
+.japan-reveal-title {
+    margin: 2px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.japan-reveal-kanji {
+    font-family: var(--font-serif);
+    font-size: clamp(2.3rem, 11vw, 3rem);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: 0.16em;
+    color: var(--text);
+    text-indent: 0.16em;
+}
+
+.japan-reveal-name {
+    font-family: var(--font-serif);
+    font-size: clamp(1.4rem, 6vw, 1.9rem);
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--rose-dark);
+    margin-top: 8px;
+}
+
+.japan-reveal-tagline {
+    font-family: var(--font-serif);
+    font-size: 0.98rem;
+    line-height: 1.65;
+    font-style: italic;
+    color: var(--text-muted);
+    max-width: 300px;
+    margin: 18px auto 6px;
+}
+
+.japan-reveal-romantic {
+    font-family: var(--font-serif);
+    font-size: 0.88rem;
+    letter-spacing: 0.04em;
+    color: var(--text-soft);
+    margin-bottom: 24px;
+}
+
+.japan-reveal-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: var(--rose);
+    color: #fff;
+    border: none;
+    border-radius: 100px;
+    font-family: var(--font-body);
+    font-size: 0.98rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: var(--shadow-rose);
+    transition: transform var(--transition-spring), background var(--transition), box-shadow var(--transition);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.japan-reveal-btn:hover {
+    background: var(--rose-dark);
+}
+
+.japan-reveal-btn:active {
+    transform: scale(0.97);
+    box-shadow: var(--shadow-md);
+}
+
+.japan-reveal-btn-arrow {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.japan-reveal-btn-open .japan-reveal-btn-arrow {
+    transform: rotate(90deg);
+}
+
+.japan-reveal-btn-open {
+    background: var(--rose-dark);
+}
+
+.japan-hanko {
+    position: absolute;
+    right: 14px;
+    bottom: 12px;
+    opacity: 0.55;
+    transform: rotate(-8deg);
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.japan-hanko svg {
+    display: block;
+}
+
+/* Sakura petals */
+.sakura-petals {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.sakura-petal {
+    position: absolute;
+    top: -20px;
+    left: calc(var(--i) * 17% + 4%);
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+}
+
+.sakura-petal::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 35% 35%, #fdeef2 0%, #f8dce6 60%, #f0c6d8 100%);
+    border-radius: 100% 0 100% 0;
+    transform: rotate(calc(var(--i) * 40deg));
+    box-shadow: inset 0 0 0 1px rgba(199, 91, 100, 0.06);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .sakura-petal {
+        animation: petalDrift var(--dur, 16s) ease-in-out infinite;
+        animation-delay: calc(var(--i) * -3.2s);
+    }
+
+    .sakura-petal:nth-child(even) {
+        --dur: 20s;
+        transform: scale(0.85);
+    }
+
+    @keyframes petalDrift {
+        0% {
+            opacity: 0;
+            transform: translateY(0) translateX(0) rotate(0deg);
+        }
+        12% {
+            opacity: 0.7;
+        }
+        50% {
+            opacity: 0.5;
+        }
+        88% {
+            opacity: 0.6;
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(260px) translateX(18px) rotate(24deg);
+        }
+    }
+}
+
+/* ===== JAPAN INTRO (revealed) ===== */
+.japan-intro {
+    margin: 2px 16px 12px;
+    padding: 30px 24px 34px;
+    background: var(--surface2);
+    border: 1px solid rgba(199, 91, 100, 0.16);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    overflow: hidden;
+}
+
+.japan-intro-content {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 0.9, 0.36, 1);
+}
+
+.japan-intro.entering .japan-intro-content {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.japan-intro-eyebrow {
+    font-family: var(--font-serif);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--rose);
+    margin-bottom: 12px;
+}
+
+.japan-intro-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.5rem, 6.5vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+
+.japan-intro-text {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    font-style: italic;
+    color: var(--text-muted);
+    max-width: 310px;
+    margin: 0 auto 6px;
+}
+
+.japan-intro-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto 12px;
+    color: var(--rose);
+}
+
+.japan-intro-confidential {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .japan-reveal-card,
+    .japan-reveal-btn,
+    .japan-intro {
+        transition-duration: 0.01ms;
+    }
+
+    .japan-reveal-card {
+        transform: none;
+    }
+
+    .japan-intro-content {
+        opacity: 1;
+        transform: none;
+    }
+}
+
 /* ===== MESSAGE ===== */
 .mensagem-card {
     margin: 0 16px 8px;
