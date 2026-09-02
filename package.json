@@ -6,21 +6,28 @@
   "scripts": {
     "start": "electron .",
     "build": "node build.mjs",
+    "test": "node --test tests/*.test.cjs",
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux",
-    "build:all": "electron-builder --win --linux"
+    "build:all": "electron-builder --win --linux",
+    "prestart": "npm run build",
+    "prebuild:win": "npm run build",
+    "prebuild:linux": "npm run build",
+    "prebuild:all": "npm run build"
   },
   "build": {
     "appId": "com.nicol.nossas-noites",
     "productName": "Nossas Noites Temáticas",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
       "index.html",
-      "css/**/*",
-      "js/**/*",
+      "manifest.json",
+      "dist/*.min.js",
+      "dist/*.min.css",
       "assets/**/*",
+      "!assets/icons/*-original.png",
       "electron-main.js",
       "electron-preload.js",
       "!**/*.map"
@@ -34,7 +41,7 @@
           ]
         }
       ],
-      "icon": "assets/icons/icon-512.png"
+      "icon": "assets/icons/girassol-512.png"
     },
     "nsis": {
       "oneClick": false,
@@ -58,7 +65,7 @@
           ]
         }
       ],
-      "icon": "assets/icons/icon-512.png",
+      "icon": "assets/icons/girassol-512.png",
       "category": "Entertainment",
       "desktopName": "Nossas Noites Tematicas"
     },

@@ -307,8 +307,8 @@ try {
     let touchStartY = 0;
     const reviewSheet = $('reviewSheet');
     if (reviewSheet) {
-        reviewSheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
-        reviewSheet.addEventListener('touchend', e => {
+        reviewSheet.querySelector('.sheet-handle').addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+        reviewSheet.querySelector('.sheet-handle').addEventListener('touchend', e => {
             const delta = e.changedTouches[0].clientY - touchStartY;
             if (delta > 80) closeReviewSheet();
         }, { passive: true });
@@ -349,15 +349,6 @@ async function deleteReview(id) {
     await storage.deleteReview(id);
     renderReviews(reviews);
     editingId = null;
-}
-
-async function deleteMomento(id) {
-    if (!confirm('Tem certeza que quer excluir esse momento?')) return;
-    closeMomentoActions();
-    momentos = momentos.filter(m => m.id !== id);
-    await momentosStorage.deleteMomento(id);
-    renderMomentos();
-    editingMomentoId = null;
 }
 
 // ===== RATING DISPLAY =====
@@ -447,8 +438,6 @@ try {
             const submitBtn = $('submitBtn');
             if (formTitle) formTitle.textContent = 'Adicionar filme';
             if (submitBtn) submitBtn.textContent = 'Adicionar filme';
-            const mn = $('movieName');
-            if (mn) mn.focus();
         });
     }
 } catch (e) {}
@@ -482,12 +471,16 @@ try {
     if (prevBtn) prevBtn.addEventListener('click', () => { currentIndex = (currentIndex - 1 + totalPhotos) % totalPhotos; updateCarousel(); });
 
     let galTouchX = 0;
+    let galTouchY = 0;
+    let lastSwipe = 0;
     const galContainer = document.querySelector('.galeria-container');
     if (galContainer) {
-        galContainer.addEventListener('touchstart', e => { galTouchX = e.touches[0].clientX; }, { passive: true });
+        galContainer.addEventListener('touchstart', e => { galTouchX = e.touches[0].clientX; galTouchY = e.touches[0].clientY; }, { passive: true });
         galContainer.addEventListener('touchend', e => {
             const diff = galTouchX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 40) {
+            const vertical = galTouchY - e.changedTouches[0].clientY;
+            if (Math.abs(diff) > 40 && Math.abs(diff) > Math.abs(vertical)) {
+                lastSwipe = Date.now();
                 currentIndex = diff > 0
                     ? (currentIndex + 1) % totalPhotos
                     : (currentIndex - 1 + totalPhotos) % totalPhotos;
@@ -502,6 +495,7 @@ try {
         const img = item.querySelector('img');
         if (!img) return;
         item.addEventListener('click', () => {
+            if (Date.now() - lastSwipe < 400) return;
             const lbImg = $('lightboxImg');
             const lb = $('lightbox');
             if (lbImg) { lbImg.src = img.src; lbImg.alt = img.alt; }
@@ -509,6 +503,7 @@ try {
         });
     });
 
+    $('closeLightbox').addEventListener('click', () => setModalOpen($('lightbox'), false));
     const lightbox = $('lightbox');
     if (lightbox) {
         lightbox.addEventListener('click', e => {
@@ -687,6 +682,7 @@ try {
 
             if (matching.length) {
                 el.classList.add('has-movie');
+                el.addEventListener('keydown', e => { if (isActivationKey(e)) { e.preventDefault(); el.click(); } });
                 el.setAttribute('role', 'button');
                 el.setAttribute('tabindex', '0');
                 el.setAttribute('aria-label', `${matching.length} filme(s) em ${formatDateBR(dateStr)}`);
@@ -720,8 +716,8 @@ try {
 
     const prevMonth = $('prevMonth');
     const nextMonth = $('nextMonth');
-    if (prevMonth) prevMonth.addEventListener('click', () => { calDate.setMonth(calDate.getMonth() - 1); buildCalendar(calDate); });
-    if (nextMonth) nextMonth.addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1); buildCalendar(calDate); });
+    if (prevMonth) prevMonth.addEventListener('click', () => { calDate.setMonth(calDate.getMonth() - 1, 1); buildCalendar(calDate); });
+    if (nextMonth) nextMonth.addEventListener('click', () => { calDate.setMonth(calDate.getMonth() + 1, 1); buildCalendar(calDate); });
 
     // expose buildCalendar for calendar section
     window._buildCalendar = buildCalendar;
@@ -742,8 +738,7 @@ document.addEventListener('keydown', e => {
             closeReviewSheet();
         } else if (window._calendarModal && window._calendarModal.classList.contains('open')) {
             setModalOpen(window._calendarModal, false);
-        } else if (timelineModal && timelineModal.classList.contains('open')) {
-            closeTimeline();
+
         } else {
             const meetup = $('meetupModal');
             if (meetup && meetup.classList.contains('open')) closeMeetupModal();
@@ -755,300 +750,6 @@ try {
     const refreshBtn = $('refreshBtn');
     if (refreshBtn) refreshBtn.addEventListener('click', () => { window.location.reload(); });
 } catch (e) {}
-
-// ===== MOMENTOS =====
-const momentosStorageKey = 'nossaHistoria';
-let momentosCache = null;
-
-const momentosStorage = {
-    async get() {
-        if (momentosCache && Array.isArray(momentosCache)) return [...momentosCache];
-        try {
-            const resp = await fetch('/api/momentos');
-            if (resp.ok) {
-                momentosCache = await resp.json();
-                if (!Array.isArray(momentosCache)) momentosCache = [];
-                return [...momentosCache];
-            }
-        } catch { }
-        try {
-            const raw = localStorage.getItem(momentosStorageKey);
-            momentosCache = raw ? JSON.parse(raw) : [];
-            if (!Array.isArray(momentosCache)) momentosCache = [];
-        } catch { momentosCache = []; }
-        return [...momentosCache];
-    },
-    async saveMomento(momento) {
-        if (!momento || !momento.id) return;
-        try {
-            const resp = await fetch('/api/momentos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...(APP_SECRET ? { 'X-App-Secret': APP_SECRET } : {}) },
-                body: JSON.stringify({ op: 'upsert', momento })
-            });
-            if (resp.ok) {
-                const data = await resp.json();
-                if (Array.isArray(data.momentos)) {
-                    momentosCache = data.momentos;
-                    try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
-                }
-                return true;
-            }
-        } catch { }
-        if (momentosCache) {
-            const idx = momentosCache.findIndex(m => m.id === momento.id);
-            if (idx >= 0) momentosCache[idx] = momento; else momentosCache.push(momento);
-            try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
-        }
-        return false;
-    },
-    async deleteMomento(id) {
-        if (isElectron) {
-            try {
-                const result = await window.electronAPI.deleteMomento(id);
-                if (Array.isArray(result)) momentosCache = result;
-                return true;
-            } catch { }
-        }
-        try {
-            const resp = await fetch('/api/momentos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...(APP_SECRET ? { 'X-App-Secret': APP_SECRET } : {}) },
-                body: JSON.stringify({ op: 'delete', id })
-            });
-            if (resp.ok) {
-                const data = await resp.json();
-                if (Array.isArray(data.momentos)) {
-                    momentosCache = data.momentos;
-                    try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
-                }
-                return true;
-            }
-        } catch { }
-        if (momentosCache) {
-            momentosCache = momentosCache.filter(m => m.id !== id);
-            try { localStorage.setItem(momentosStorageKey, JSON.stringify(momentosCache)); } catch { }
-        }
-        return false;
-    }
-};
-
-let momentos = [];
-let editingMomentoId = null;
-
-const SEED_MOMENTO = { id: 'seed-2024-06-29', data: '2024-06-29', mensagem: 'Primeiro filme juntos: Harry Potter, no shopping de Gravataí.' };
-
-function formatMomentoDate(dateStr) {
-    if (!dateStr) return '';
-    const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-    const [y, m, d] = dateStr.split('-');
-    return `${Number(d)} de ${meses[Number(m) - 1]}`;
-}
-
-function loadMomentos() {
-    return momentosStorage.get().then(items => {
-        if (!items.length) {
-            momentos = [SEED_MOMENTO];
-            momentosCache = [...momentos];
-        } else {
-            momentos = items;
-        }
-        momentos.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
-        renderMomentos();
-    }).catch(() => {
-        momentos = [];
-        renderMomentos();
-    });
-}
-
-function renderMomentos() {
-    const container = $('timelineList');
-    if (!container) return;
-    if (!momentos.length) {
-        container.innerHTML = '<p class="empty-state">Nenhum momento ainda — adicione o primeiro!</p>';
-        return;
-    }
-    const sorted = [...momentos].sort((a, b) => (a.data || '').localeCompare(b.data || ''));
-    const frag = document.createDocumentFragment();
-    sorted.forEach(m => {
-        const item = document.createElement('div');
-        item.className = 'timeline-item';
-        item.innerHTML = `
-            <div class="timeline-dot" data-id="${escapeHtml(m.id)}"></div>
-            <div class="timeline-content">
-                <span class="timeline-date">${formatMomentoDate(m.data)}</span>
-                <p class="timeline-msg">${escapeHtml(m.mensagem)}</p>
-            </div>
-        `;
-        frag.appendChild(item);
-    });
-    container.replaceChildren(frag);
-}
-
-const timelineModal = $('timelineModal');
-
-function openTimeline() {
-    renderMomentos();
-    setModalOpen(timelineModal, true);
-}
-
-function closeTimeline() {
-    closeMomentoActions();
-    setModalOpen(timelineModal, false);
-    const form = $('momentoForm');
-    const addBtn = $('addMomentoBtn');
-    if (form) form.style.display = 'none';
-    if (addBtn) addBtn.style.display = '';
-    editingMomentoId = null;
-    const saveBtn = $('momentoSaveBtn');
-    if (saveBtn) saveBtn.textContent = 'Salvar';
-}
-
-function setupMomentoForm() {
-    const addBtn = $('addMomentoBtn');
-    const form = $('momentoForm');
-    const cancelBtn = $('momentoCancelBtn');
-    if (!addBtn || !form || !cancelBtn) return;
-
-    addBtn.addEventListener('click', () => {
-        editingMomentoId = null;
-        const saveBtn = $('momentoSaveBtn');
-        if (saveBtn) saveBtn.textContent = 'Salvar';
-        form.style.display = 'block';
-        addBtn.style.display = 'none';
-        const dataInput = $('momentoData');
-        const msgInput = $('momentoMensagem');
-        if (dataInput) dataInput.value = new Date().toISOString().slice(0, 10);
-        if (msgInput) { msgInput.value = ''; msgInput.focus(); }
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        form.style.display = 'none';
-        addBtn.style.display = '';
-        editingMomentoId = null;
-        const saveBtn = $('momentoSaveBtn');
-        if (saveBtn) saveBtn.textContent = 'Salvar';
-    });
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const dataInput = $('momentoData');
-        const msgInput = $('momentoMensagem');
-        const data = dataInput ? dataInput.value : '';
-        const mensagem = msgInput ? msgInput.value.trim() : '';
-        if (!data || !mensagem) {
-            alert('Preencha a data e a mensagem.');
-            return;
-        }
-        const id = editingMomentoId || generateId();
-        const payload = { id, data, mensagem };
-        const idx = momentos.findIndex(m => m.id === id);
-        if (idx >= 0) {
-            momentos[idx] = payload;
-        } else {
-            momentos.push(payload);
-        }
-        momentos.sort((a, b) => (a.data || '').localeCompare(b.data || ''));
-        await momentosStorage.saveMomento(payload);
-        renderMomentos();
-        form.style.display = 'none';
-        addBtn.style.display = '';
-        editingMomentoId = null;
-        const saveBtn = $('momentoSaveBtn');
-        if (saveBtn) saveBtn.textContent = 'Salvar';
-    });
-}
-
-try {
-    const timelineBtn = $('timelineBtn');
-    if (timelineBtn) timelineBtn.addEventListener('click', openTimeline);
-    const closeTimelineBtn = $('closeTimelineModal');
-    if (closeTimelineBtn) closeTimelineBtn.addEventListener('click', closeTimeline);
-    if (timelineModal) timelineModal.addEventListener('click', e => { if (e.target === timelineModal) closeTimeline(); });
-    setupMomentoForm();
-} catch (e) {}
-
-let dotState = { id: null, count: 0, timer: null };
-const timelineList = $('timelineList');
-
-function closeMomentoActions() {
-    const existing = document.querySelector('.momento-actions');
-    if (existing) existing.remove();
-}
-
-function showMomentoActions(item, momento) {
-    closeMomentoActions();
-    const actions = document.createElement('div');
-    actions.className = 'momento-actions';
-    const editBtn = document.createElement('button');
-    editBtn.type = 'button';
-    editBtn.className = 'momento-action-btn momento-action-edit';
-    editBtn.textContent = 'Editar';
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'momento-action-btn momento-action-delete';
-    deleteBtn.textContent = 'Excluir';
-    actions.appendChild(editBtn);
-    actions.appendChild(deleteBtn);
-    const content = item.querySelector('.timeline-content');
-    if (content) content.after(actions);
-
-    editBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeMomentoActions();
-        editingMomentoId = momento.id;
-        const dataInput = $('momentoData');
-        const msgInput = $('momentoMensagem');
-        const saveBtn = $('momentoSaveBtn');
-        if (dataInput) dataInput.value = momento.data;
-        if (msgInput) msgInput.value = momento.mensagem;
-        if (saveBtn) saveBtn.textContent = 'Salvar alterações';
-        const form = $('momentoForm');
-        const addBtn = $('addMomentoBtn');
-        if (form) form.style.display = 'block';
-        if (addBtn) addBtn.style.display = 'none';
-        if (msgInput) msgInput.focus();
-    });
-
-    deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteMomento(momento.id);
-    });
-}
-
-if (timelineList) {
-    timelineList.addEventListener('click', (e) => {
-        if (!e.target.closest('.momento-actions')) {
-            closeMomentoActions();
-        }
-
-        const dot = e.target.closest('.timeline-dot');
-        if (!dot) return;
-        const momentoId = dot.dataset.id;
-        if (!momentoId) return;
-
-        if (dotState.id !== momentoId) {
-            dotState.id = momentoId;
-            dotState.count = 1;
-            clearTimeout(dotState.timer);
-            dotState.timer = setTimeout(() => { dotState = { id: null, count: 0, timer: null }; }, 2000);
-        } else {
-            dotState.count++;
-        }
-
-        if (dotState.count >= 3) {
-            clearTimeout(dotState.timer);
-            dotState = { id: null, count: 0, timer: null };
-
-            const momento = momentos.find(m => m.id === momentoId);
-            if (!momento) return;
-
-            const item = dot.closest('.timeline-item');
-            if (item) showMomentoActions(item, momento);
-        }
-    });
-}
 
 // ===== MEETUP / COUNTDOWN =====
 try {
@@ -1169,105 +870,59 @@ try {
     setInterval(updateCountdown, 1000);
 } catch (e) {}
 
-// ===== JAPAN REVEAL =====
-try {
-    const japanBtn = $('japanRevealBtn');
-    const japanCard = document.querySelector('.japan-reveal-card');
-    const japanIntro = document.querySelector('.japan-intro');
+// Convite do Japão: o botão nativo também funciona com Enter e espaço.
+const japanBtn = $('japanRevealBtn');
+const japanIntro = $('japanIntro');
+if (japanBtn && japanIntro) {
+    japanBtn.addEventListener('click', () => {
+        const isOpen = japanIntro.hidden;
+        japanIntro.hidden = !isOpen;
+        japanBtn.setAttribute('aria-expanded', String(isOpen));
+        japanBtn.querySelector('span').textContent = isOpen ? 'Fechar convite' : 'Abrir convite';
+    });
+}
 
-    if (japanBtn && japanIntro) {
-        let japanOpen = false;
+const menuLink = $('openMenuArtwork');
+const menuViewer = $('menuViewer');
+if (menuLink && menuViewer && typeof menuViewer.showModal === 'function') {
+    const canvas = $('menuViewerCanvas');
+    const zoomButton = $('zoomMenuArtwork');
+    let previousOverflow = '';
 
-        const openJapan = () => {
-            if (japanOpen) return;
-            japanOpen = true;
+    menuLink.addEventListener('click', e => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        previousOverflow = document.body.style.overflow;
+        canvas.classList.remove('is-zoomed');
+        zoomButton.setAttribute('aria-pressed', 'false');
+        zoomButton.textContent = 'Ampliar';
+        menuViewer.showModal();
+        document.body.style.overflow = 'hidden';
+        canvas.scrollTop = 0;
+        canvas.scrollLeft = 0;
+    });
 
-            japanBtn.classList.add('japan-reveal-btn-open');
-            japanBtn.setAttribute('aria-expanded', 'true');
+    zoomButton.addEventListener('click', () => {
+        const isZoomed = canvas.classList.toggle('is-zoomed');
+        zoomButton.setAttribute('aria-pressed', String(isZoomed));
+        zoomButton.textContent = isZoomed ? 'Ver inteira' : 'Ampliar';
+        canvas.scrollTop = 0;
+        canvas.scrollLeft = 0;
+    });
 
-            if (japanCard) {
-                japanCard.classList.add('revealing');
-                setTimeout(() => japanCard.classList.replace('revealing', 'revealed'), 400);
-            }
-
-            japanIntro.hidden = false;
-
-            const doEnter = () => { japanIntro.classList.add('entering'); };
-            if (typeof requestAnimationFrame === 'function') {
-                requestAnimationFrame(() => { requestAnimationFrame(doEnter); });
-            } else {
-                setTimeout(doEnter, 50);
-            }
-
-            setTimeout(() => {
-                safeScrollIntoView(japanIntro, { behavior: 'smooth', block: 'nearest' });
-            }, 350);
-        };
-
-        japanBtn.addEventListener('click', openJapan);
-        japanBtn.addEventListener('keydown', e => {
-            if (isActivationKey(e)) {
-                e.preventDefault();
-                openJapan();
-            }
-        });
-    }
-} catch (e) {}
-
-// ===== SCROLL REVEAL =====
-try {
-    if ('IntersectionObserver' in window) {
-        const revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('revealed');
-                    revealObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.15 });
-
-        qsa('.scroll-reveal').forEach(el => revealObserver.observe(el));
-    } else {
-        qsa('.scroll-reveal').forEach(el => el.classList.add('revealed'));
-    }
-} catch (e) {
-    qsa('.scroll-reveal').forEach(el => el.classList.add('revealed'));
+    $('closeMenuArtwork').addEventListener('click', () => menuViewer.close());
+    menuViewer.addEventListener('close', () => {
+        document.body.style.overflow = previousOverflow;
+        menuLink.focus({ preventScroll: true });
+    });
 }
 
 // ===== INIT =====
 try { loadReviews(); } catch (e) {}
-try { loadMomentos(); } catch (e) {}
 
-// ===== SERVICE WORKER =====
+// A atualização fica disponível no próximo acesso, sem interromper um formulário.
 if ('serviceWorker' in navigator && !isElectron) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then((reg) => {
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                if (!newWorker) return;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-                        const reloaded = sessionStorage.getItem('sw-reload');
-                        if (!reloaded) {
-                            sessionStorage.setItem('sw-reload', '1');
-                            window.location.reload();
-                        }
-                    }
-                });
-            });
-        }).catch(() => {});
-
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (refreshing) return;
-            refreshing = true;
-            const reloaded = sessionStorage.getItem('sw-reload');
-            if (!reloaded) {
-                sessionStorage.setItem('sw-reload', '1');
-                window.location.reload();
-            }
-        });
-
-        try { sessionStorage.removeItem('sw-reload'); } catch (_) {}
+        navigator.serviceWorker.register('sw.js').catch(() => {});
     });
 }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'noites-tematicas-v4';
+const CACHE_VERSION = 'noites-tematicas-v12';
 
 const APP_SHELL = [
   '/',
@@ -9,8 +9,16 @@ const APP_SHELL = [
 ];
 
 const OPTIONAL_ASSETS = [
-  '/assets/icons/icon-192.png',
-  '/assets/icons/icon-512.png'
+  '/assets/images/tinkaton.png',
+  '/assets/images/clefable.png',
+  '/assets/images/gengar.png',
+  '/assets/images/cardapio-japao-nick.jpg',
+  '/assets/icons/girassol-192.png',
+  '/assets/icons/girassol-512.png',
+  '/assets/icons/girassol-192-maskable.png',
+  '/assets/icons/girassol-512-maskable.png',
+  '/assets/icons/girassol-apple.png',
+  '/assets/icons/girassol-favicon.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,7 +42,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k !== CACHE_VERSION)
+          .filter((k) => k.startsWith('noites-tematicas-') && k !== CACHE_VERSION)
           .map((k) => caches.delete(k))
       )
     ).then(() => self.clients.claim())

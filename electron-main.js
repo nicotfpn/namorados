@@ -1,8 +1,7 @@
-const { app, BrowserWindow, protocol, ipcMain, session } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-const isDev = !app.isPackaged;
 const DATA_DIR = path.join(app.getPath('userData'), 'data');
 const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
 
@@ -51,7 +50,7 @@ function createWindow() {
     minWidth: 360,
     minHeight: 500,
     title: 'Nossas Noites Temáticas',
-    icon: path.join(__dirname, 'assets', 'icons', 'icon-192.png'),
+    icon: path.join(__dirname, 'assets', 'icons', 'girassol-192.png'),
     backgroundColor: '#fdf6f0',
     webPreferences: {
       preload: path.join(__dirname, 'electron-preload.js'),

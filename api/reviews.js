@@ -44,25 +44,15 @@ module.exports = async (req, res) => {
     return reviews;
   }
 
-  async function saveAll(reviews) {
-    await saveVersioned(0, reviews);
-  }
-
-  async function atomicUpdate(mutateFn) {
+  async function updateWithRetry(mutateFn) {
     const MAX_RETRIES = 3;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       const current = await fetchVersioned();
-      const originalIds = new Set(current.reviews.map(r => r.id));
-      const mutated = mutateFn([...current.reviews]);
-      const newIds = new Set(mutated.map(r => r.id));
-      const merged = mutated.map(r => ({ ...r }));
-      for (const r of current.reviews) {
-        if (!newIds.has(r.id)) merged.push({ ...r });
-      }
+      const updated = mutateFn([...current.reviews]);
       const nextVersion = (current.version || 0) + 1;
       try {
-        await saveVersioned(nextVersion, merged);
-        return merged;
+        await saveVersioned(nextVersion, updated);
+        return updated;
       } catch (e) {
         if (attempt === MAX_RETRIES - 1) throw e;
       }
@@ -95,7 +85,7 @@ module.exports = async (req, res) => {
 
       if (body && body.op === 'upsert' && body.review && body.review.id) {
         try {
-          const reviews = await atomicUpdate(list => {
+          const reviews = await updateWithRetry(list => {
             const idx = list.findIndex(r => r.id === body.review.id);
             if (idx >= 0) list[idx] = body.review;
             else list.push(body.review);
@@ -109,7 +99,7 @@ module.exports = async (req, res) => {
 
       if (body && body.op === 'delete' && body.id) {
         try {
-          const reviews = await atomicUpdate(list => list.filter(r => r.id !== body.id));
+          const reviews = await updateWithRetry(list => list.filter(r => r.id !== body.id));
           return res.status(200).json({ ok: true, reviews });
         } catch {
           return res.status(409).json({ error: 'Conflict: could not save after retries' });
@@ -118,7 +108,7 @@ module.exports = async (req, res) => {
 
       if (body && Array.isArray(body.reviews)) {
         try {
-          const reviews = await atomicUpdate(() => body.reviews);
+          const reviews = await updateWithRetry(() => body.reviews);
           return res.status(200).json({ ok: true, reviews });
         } catch {
           return res.status(409).json({ error: 'Conflict: could not save after retries' });

@@ -8,8 +8,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#fdf6f0">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="assets/icons/girassol-apple.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/girassol-favicon.png">
     <meta name="apple-mobile-web-app-title" content="Nossa Noite">
     <meta name="description" content="Uma página especial para os nossos namorados — filmes, fotos e muito amor.">
     <title>Nossas Noites Temáticas</title>
@@ -18,11 +18,24 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="dist/style.min.css?v=4">
-    <noscript><style>.scroll-reveal{opacity:1!important;transform:none!important}</style></noscript>
+    <link rel="stylesheet" href="dist/style.min.css?v=10">
 </head>
 
 <body>
+    <div class="sakura-background" aria-hidden="true">
+        <span class="sakura-petal" style="--i: 0;"></span>
+        <span class="sakura-petal" style="--i: 1;"></span>
+        <span class="sakura-petal" style="--i: 2;"></span>
+        <span class="sakura-petal" style="--i: 3;"></span>
+        <span class="sakura-petal" style="--i: 4;"></span>
+        <span class="sakura-petal" style="--i: 5;"></span>
+        <span class="sakura-petal" style="--i: 6;"></span>
+        <span class="sakura-petal" style="--i: 7;"></span>
+        <span class="sakura-petal" style="--i: 8;"></span>
+        <span class="sakura-petal" style="--i: 9;"></span>
+        <span class="sakura-petal" style="--i: 10;"></span>
+        <span class="sakura-petal" style="--i: 11;"></span>
+    </div>
     <button class="refresh-btn" id="refreshBtn" aria-label="Recarregar página" title="Recarregar página">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -47,40 +60,18 @@
 
         <!-- JAPÃO REVEAL CARD -->
         <section class="japan-reveal-card" aria-labelledby="japanRevealTitle">
+            <div class="pokemon-stickers" aria-hidden="true">
+                <img class="pokemon-sticker sticker-clefable" src="assets/images/clefable.png" width="62" height="62" alt="" decoding="async">
+                <img class="pokemon-sticker sticker-tinkaton" src="assets/images/tinkaton.png" width="78" height="78" alt="" decoding="async">
+                <img class="pokemon-sticker sticker-gengar" src="assets/images/gengar.png" width="64" height="64" alt="" decoding="async">
+            </div>
             <div class="japan-reveal-inner">
                 <p class="japan-reveal-eyebrow">Nosso próximo destino</p>
 
-                <div class="japan-sun" aria-hidden="true">
-                    <svg viewBox="0 0 120 120" width="100" height="100" aria-hidden="true">
-                        <defs>
-                            <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%">
-                                <stop offset="0%" stop-color="#fef7f0" />
-                                <stop offset="60%" stop-color="#fdf0e8" />
-                                <stop offset="100%" stop-color="#f7ede4" />
-                            </radialGradient>
-                        </defs>
-                        <circle cx="60" cy="60" r="50" fill="url(#sunGradient)" stroke="#c75b64" stroke-width="0.5"
-                            stroke-opacity="0.3" />
-                        <circle cx="60" cy="60" r="38" fill="none" stroke="#c75b64" stroke-width="1"
-                            stroke-opacity="0.25" />
-                        <circle cx="60" cy="60" r="26" fill="none" stroke="#c75b64" stroke-width="0.5"
-                            stroke-opacity="0.15" />
-                        <g stroke="#c75b64" stroke-width="1.5" stroke-linecap="round" opacity="0.4">
-                            <line x1="60" y1="12" x2="60" y2="22" />
-                            <line x1="60" y1="98" x2="60" y2="108" />
-                            <line x1="12" y1="60" x2="22" y2="60" />
-                            <line x1="98" y1="60" x2="108" y2="60" />
-                            <line x1="22.4" y1="22.4" x2="30.4" y2="30.4" />
-                            <line x1="89.6" y1="89.6" x2="97.6" y2="97.6" />
-                            <line x1="22.4" y1="97.6" x2="30.4" y2="89.6" />
-                            <line x1="89.6" y1="30.4" x2="97.6" y2="22.4" />
-                        </g>
-                    </svg>
-                    <span class="japan-sun-ring" aria-hidden="true"></span>
-                </div>
+                <div class="japan-sun" aria-hidden="true"></div>
 
                 <h2 id="japanRevealTitle" class="japan-reveal-title">
-                    <span class="japan-reveal-kanji">日本</span>
+                    <span class="japan-reveal-kanji" lang="ja">日本</span>
                     <span class="japan-reveal-name">Japão</span>
                 </h2>
 
@@ -90,40 +81,20 @@
 
                 <button type="button" class="japan-reveal-btn" id="japanRevealBtn" aria-expanded="false"
                     aria-controls="japanIntro">
-                    <span>Entrar no Japão</span>
+                    <span>Abrir convite</span>
                     <svg class="japan-reveal-btn-arrow" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                         <path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </button>
 
-                <div class="japan-hanko" aria-hidden="true">
-                    <svg viewBox="0 0 60 60" width="56" height="56">
-                        <circle cx="30" cy="30" r="26" fill="none" stroke="#c75b64" stroke-width="2" />
-                        <text x="30" y="36" text-anchor="middle" font-family="serif" font-size="22" font-weight="600"
-                            fill="#c75b64">二人</text>
-                    </svg>
-                </div>
             </div>
 
-            <div class="sakura-petals" aria-hidden="true">
-                <span class="sakura-petal" style="--i: 0;"></span>
-                <span class="sakura-petal" style="--i: 1;"></span>
-                <span class="sakura-petal" style="--i: 2;"></span>
-                <span class="sakura-petal" style="--i: 3;"></span>
-                <span class="sakura-petal" style="--i: 4;"></span>
-                <span class="sakura-petal" style="--i: 5;"></span>
-            </div>
         </section>
+
 
         <!-- JAPÃO INTRO (REVEALED ON CLICK) -->
         <section class="japan-intro" id="japanIntro" hidden aria-labelledby="japanIntroTitle">
-            <div class="japan-intro-divider" aria-hidden="true">
-                <svg viewBox="0 0 120 12" width="120" height="12">
-                    <path d="M0 6 C20 6, 30 -2, 40 6 C50 14, 60 6, 80 6 C90 -2, 100 6, 120 6" fill="none"
-                        stroke="#c75b64" stroke-width="0.8" stroke-opacity="0.35" />
-                </svg>
-            </div>
 
             <div class="japan-intro-content">
                 <p class="japan-intro-eyebrow">Uma noite em Tóquio</p>
@@ -131,29 +102,36 @@
                 <p class="japan-intro-text">Segundo mês temático e não podia amar mais, ainda mais do lado do meu amoi!
                     Esse mês vai ser: JAPÃO </p>
 
-                <div class="japan-intro-divider" aria-hidden="true">
-                    <svg viewBox="0 0 120 12" width="120" height="12">
-                        <path d="M0 6 C20 6, 30 -2, 40 6 C50 14, 60 6, 80 6 C90 -2, 100 6, 120 6" fill="none"
-                            stroke="#c75b64" stroke-width="0.8" stroke-opacity="0.35" />
-                    </svg>
-                </div>
-
-                <p class="japan-intro-confidential">nosso roteiro vai ser o seguinte:</p>
             </div>
+
+            <section class="our-menu" aria-labelledby="menuTitle">
+                <h3 id="menuTitle">Cardápio da nossa noite:</h3>
+
+                <figure class="menu-artwork">
+                    <a href="assets/images/cardapio-japao-nick.jpg" id="openMenuArtwork" target="_blank" rel="noopener"
+                        aria-label="Abrir o cardápio em tela cheia">
+                        <img src="assets/images/cardapio-japao-nick.jpg" width="856" height="1600"
+                            alt="Arte do cardápio Noite Japonesa a Dois, feita pela Nick, em tons de lilás com flores de cerejeira."
+                            loading="lazy" decoding="async">
+                        <span class="menu-artwork-link">Abrir cardápio <span aria-hidden="true">↗</span></span>
+                    </a>
+                </figure>
+
+            </section>
         </section>
 
         <!-- GALLERY -->
-        <div class="galeria-card scroll-reveal">
+        <div class="galeria-card">
             <div class="galeria-container">
                 <div class="galeria-wrapper" id="galeriaWrapper">
-                    <div class="galeria-item"><img src="assets/images/1.webp" alt="Foto 1" decoding="async">
+                    <div class="galeria-item"><img src="assets/images/1.webp" width="960" height="894" alt="Foto 1" decoding="async">
                         <div class="galeria-overlay"></div>
                     </div>
-                    <div class="galeria-item"><img src="assets/images/2.webp" alt="Foto 2" loading="lazy"
+                    <div class="galeria-item"><img src="assets/images/2.webp" width="960" height="634" alt="Foto 2" loading="lazy"
                             decoding="async">
                         <div class="galeria-overlay"></div>
                     </div>
-                    <div class="galeria-item"><img src="assets/images/3.webp" alt="Foto 3" loading="lazy"
+                    <div class="galeria-item"><img src="assets/images/3.webp" width="960" height="553" alt="Foto 3" loading="lazy"
                             decoding="async">
                         <div class="galeria-overlay"></div>
                     </div>
@@ -166,64 +144,23 @@
             </div>
         </div>
 
-        <!-- SPOTIFY -->
-        <div class="section" style="margin-top:8px;">
-            <div class="section-header">
-                <svg class="section-icon-svg" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.6"
-                    stroke-linecap="round" stroke-linejoin="round" width="16" height="14">
-                    <path d="M8,3 L8,17" />
-                    <ellipse cx="6" cy="17" rx="3" ry="2.2" transform="rotate(-15, 6, 17)" />
-                    <path d="M18,5 L18,19" />
-                    <ellipse cx="16" cy="19" rx="3" ry="2.2" transform="rotate(-15, 16, 19)" />
-                    <path d="M8,3 L18,5" />
-                    <path d="M8,6 L18,8" opacity="0.5" />
-                </svg>
-                <span class="section-label">Nossas playlists</span>
-            </div>
-        </div>
-        <div class="spotify-card scroll-reveal">
-            <iframe title="Nossa playlist no Spotify"
-                src="https://open.spotify.com/embed/playlist/7uaHKseMBYjDd2mOl3aSnO?utm_source=generator&si=c3b66a50512a4aeb"
-                width="100%" frameBorder="0" allowfullscreen="" loading="lazy"
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
-        </div>
-        <div class="spotify-card" style="margin-top:8px;">
-            <iframe title="Nossa playlist no Spotify"
-                src="https://open.spotify.com/embed/playlist/6e38QNjp37czVGs15S0Qyt?utm_source=generator&si=a13e76e691934a4f"
-                width="100%" frameBorder="0" allowfullscreen=""
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"></iframe>
-        </div>
-
         <!-- PHOTO CALLOUT -->
-        <div class="photo-section scroll-reveal">
-            <img src="assets/images/4.webp" alt="Foto especial" loading="lazy" decoding="async" class="photo-img">
+        <div class="photo-section">
+            <img src="assets/images/4.webp" width="960" height="720" alt="Foto especial" loading="lazy" decoding="async" class="photo-img">
             <p class="photo-caption">Não preciso ir em museu nenhum mais, já achei minha obra de arte favorita</p>
-        </div>
-
-        <!-- NOSSA HISTÓRIA -->
-        <div class="section" style="margin-top:8px;">
-            <button class="section-header timeline-trigger" id="timelineBtn" type="button">
-                <svg class="section-icon-svg" viewBox="0 0 28 26" fill="none" stroke="currentColor" stroke-width="1.6"
-                    stroke-linecap="round" stroke-linejoin="round" width="16" height="14">
-                    <path
-                        d="M14,24 C14,24 3,16 3,9 C3,5 6,2 9,3 C12,4 14,7 14,9 C14,7 16,4 19,3 C22,2 25,5 25,9 C25,16 14,24 14,24 Z" />
-                </svg>
-                <span class="section-label">Nossa história</span>
-            </button>
         </div>
 
         <!-- RATINHO -->
         <div class="ratinho-section">
             <button class="ratinho-btn" id="ratinhoBtn" aria-label="Clique para ver o que eu amo em você">
-                <img src="assets/images/rato_com_flor.webp" alt="Ratinho com flores" loading="lazy" decoding="async">
+                <img src="assets/images/rato_com_flor.webp" width="280" height="280" alt="Ratinho com flores" loading="lazy" decoding="async">
             </button>
             <div class="ratinho-msg" id="ratinhoMsg" role="status" aria-live="polite">Clique no ratinho para ver o que
                 eu amo em você</div>
         </div>
 
         <!-- LETTERBOXD -->
-        <div class="letterboxd-section scroll-reveal">
+        <div class="letterboxd-section">
             <div class="letterboxd-header">
                 <div class="letterboxd-title-group">
                     <span class="section-label">Nosso Letterboxd</span>
@@ -385,55 +322,31 @@
             </div>
             <div class="meetup-actions" style="margin-top:18px; display:flex; gap:10px;">
                 <button type="button" class="submit-btn" id="meetupSaveBtn" style="flex:1; margin:0;">Salvar</button>
-                <button type="button" class="cal-close" id="meetupCancelBtn"
-                    style="width:auto; height:auto; padding:8px 18px; border-radius:var(--radius-sm); font-size:0.85rem;"
+                <button type="button" class="secondary-btn" id="meetupCancelBtn"
                     aria-label="Cancelar">Cancelar</button>
             </div>
         </div>
     </div>
 
-    <!-- TIMELINE MODAL -->
-    <div id="timelineModal" class="modal-overlay timeline-overlay" role="dialog" aria-modal="true" aria-hidden="true"
-        aria-label="Nossa história">
-        <div class="timeline-sheet">
-            <div class="sheet-handle"></div>
-            <div class="sheet-inner">
-                <div class="sheet-header">
-                    <div>
-                        <div class="sheet-title">Nossa história</div>
-                    </div>
-                    <button type="button" class="sheet-close" id="closeTimelineModal" aria-label="Fechar">×</button>
-                </div>
-                <div id="timelineList" class="timeline-list"></div>
-                <button type="button" id="addMomentoBtn" class="add-momento-btn">+ adicionar momento</button>
-                <form id="momentoForm" class="momento-form" style="display:none;">
-                    <div class="form-group">
-                        <label class="form-label" for="momentoData">Data</label>
-                        <input class="form-input" type="date" id="momentoData" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="momentoMensagem">Mensagem</label>
-                        <textarea class="form-input" id="momentoMensagem" placeholder="Escreva sobre esse momento..."
-                            rows="3"></textarea>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        <button type="submit" class="submit-btn" id="momentoSaveBtn"
-                            style="flex:1; margin:0;">Salvar</button>
-                        <button type="button" class="cal-close" id="momentoCancelBtn"
-                            style="width:auto; height:auto; padding:8px 18px; border-radius:var(--radius-sm); font-size:0.85rem;"
-                            aria-label="Cancelar">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- LIGHTBOX -->
-    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Foto ampliada">
+        <button type="button" class="lightbox-close sheet-close" id="closeLightbox" aria-label="Fechar foto">×</button>
         <img src="" alt="" id="lightboxImg">
     </div>
 
-    <script src="dist/main.min.js?v=4" defer></script>
+    <dialog class="menu-viewer" id="menuViewer" aria-labelledby="menuViewerTitle">
+        <div class="menu-viewer-toolbar">
+            <p id="menuViewerTitle">Nosso cardápio</p>
+            <button type="button" id="zoomMenuArtwork" aria-pressed="false" aria-controls="menuViewerCanvas">Ampliar</button>
+            <button type="button" id="closeMenuArtwork" autofocus>Fechar</button>
+        </div>
+        <div class="menu-viewer-canvas" id="menuViewerCanvas">
+            <img src="assets/images/cardapio-japao-nick.jpg" width="856" height="1600" loading="lazy"
+                alt="Cardápio original feito pela Nick: Noite Japonesa a Dois. Harumaki, yakisoba, banana tempura e drink de yuzu, com uma mensagem para cada prato.">
+        </div>
+    </dialog>
+
+    <script src="dist/main.min.js?v=10" defer></script>
 </body>
 
 </html>
